@@ -10,10 +10,31 @@ from pathlib import Path
 
 from . import __version__
 from .bearbeiten import REIHENFOLGE, Bearbeitung, groesse_parsen, zuschnitt_parsen
-from .convert import Ergebnis, bearbeiten, umwandeln
+from .convert import Ergebnis, bearbeiten, quellformat_erkennen, umwandeln
 from .fehler import BedienFehler, MiksanFehler
-from .formats import alle_formate, extra_installiert, markdown_tabelle, tabellen_zeilen
-from .hintergrund import STANDARD_MODELL, hintergrund_entfernen
+from .formats import (
+    Format,
+    alle_formate,
+    extra_installiert,
+    format_aus_name,
+    markdown_tabelle,
+    tabellen_zeilen,
+)
+from .hintergrund import (
+    STANDARD_MODELL,
+    hintergrund_entfernen,
+    sitzung_erstellen,
+    standard_ausgabe,
+)
+from .stapel import (
+    Auftrag,
+    Datei,
+    auftraege_planen,
+    ausfuehren,
+    dateien_sammeln,
+    ist_muster,
+    zusammenfassung_ausgeben,
+)
 
 
 def _ausfuehrlich(parser: argparse.ArgumentParser) -> None:
@@ -23,9 +44,39 @@ def _ausfuehrlich(parser: argparse.ArgumentParser) -> None:
 
 
 def _datei_optionen(parser: argparse.ArgumentParser) -> None:
-    """Optionen, die alle Befehle mit Ein- und Ausgabedatei gemeinsam haben."""
-    parser.add_argument("eingabe", type=Path, help="Eingabedatei")
-    parser.add_argument("ausgabe", type=Path, nargs="?", help="Ausgabedatei (optional)")
+    """Optionen, die alle Befehle mit Ein- und Ausgabedateien gemeinsam haben."""
+    parser.add_argument(
+        "pfade",
+        nargs="+",
+        metavar="PFAD",
+        help="Eingabedatei(en), Ordner oder Muster wie *.heic. Genau zwei Dateien ohne -o: "
+        "die zweite ist die Ausgabedatei.",
+    )
+    parser.add_argument(
+        "-o",
+        "--ausgabe-ordner",
+        "--output",
+        dest="ausgabe_ordner",
+        type=Path,
+        metavar="ORDNER",
+        help="Ausgabeordner für mehrere Dateien (wird bei Bedarf angelegt)",
+    )
+    parser.add_argument(
+        "-r",
+        "--rekursiv",
+        "--recursive",
+        dest="rekursiv",
+        action="store_true",
+        help="auch Unterordner verarbeiten (Ordnerstruktur bleibt in der Ausgabe erhalten)",
+    )
+    parser.add_argument(
+        "-j",
+        "--jobs",
+        dest="jobs",
+        type=_positive_zahl,
+        metavar="N",
+        help="so viele Dateien gleichzeitig verarbeiten (Standard: Anzahl CPU-Kerne)",
+    )
     parser.add_argument("--to", "--nach", dest="to", metavar="FORMAT", help="Zielformat, z. B. jpg")
     parser.add_argument(
         "--overwrite",
@@ -149,8 +200,10 @@ def _parser() -> argparse.ArgumentParser:
         "convert",
         aliases=["umwandeln"],
         help="Bild in ein anderes Format umwandeln",
-        description="Wandelt ein Bild in ein anderes Format um. Das Eingabeformat wird am "
-        "Dateiinhalt erkannt, das Zielformat an der Endung der Ausgabe oder mit --to.",
+        description="Wandelt Bilder in ein anderes Format um. Das Eingabeformat wird am "
+        "Dateiinhalt erkannt, das Zielformat an der Endung der Ausgabe oder mit --to. "
+        "Mehrere Dateien, Ordner oder Muster brauchen --to; mit -o landen die Ergebnisse "
+        "in einem Ordner, sonst neben den Originalen.",
     )
     _datei_optionen(convert)
     _bearbeitungs_optionen(convert)
@@ -219,17 +272,96 @@ def _hinweise(hinweise: list[str]) -> None:
         print(f"Hinweis: {hinweis}", file=sys.stderr)
 
 
+def _einzeldatei(args: argparse.Namespace) -> tuple[Path, Path | None] | None:
+    """Erkennt den Aufruf mit einer Datei (und optional einer Ausgabedatei)."""
+    if args.ausgabe_ordner is not None or args.rekursiv:
+        return None
+    pfade = args.pfade
+
+    def einfach(text: str) -> bool:
+        return not ist_muster(text) and not Path(text).is_dir()
+
+    if len(pfade) == 1 and einfach(pfade[0]):
+        return Path(pfade[0]), None
+    zweite_ist_eingabe = args.to is not None and Path(pfade[-1]).is_file()
+    if len(pfade) == 2 and einfach(pfade[0]) and einfach(pfade[1]) and not zweite_ist_eingabe:
+        return Path(pfade[0]), Path(pfade[1])
+    return None
+
+
+def _stapel(
+    args: argparse.Namespace,
+    ziel_fuer,
+    arbeit,
+    vorbereiten=None,
+) -> int:
+    """Verarbeitet mehrere Dateien parallel und gibt eine Zusammenfassung aus."""
+    ordner = args.ausgabe_ordner
+    if ordner is not None and ordner.exists() and not ordner.is_dir():
+        raise BedienFehler(f"-o '{ordner}' ist eine Datei, erwartet wird ein Ordner.")
+    dateien, fehler = dateien_sammeln(args.pfade, rekursiv=args.rekursiv)
+    auftraege, planfehler = auftraege_planen(dateien, ziel_fuer, ordner)
+    fehler += planfehler
+    if not auftraege and not fehler:
+        raise MiksanFehler("Keine Bilddateien gefunden.")
+    if auftraege:
+        if ordner is not None:
+            ordner.mkdir(parents=True, exist_ok=True)
+        if vorbereiten is not None:
+            vorbereiten()
+
+    def mit_ordner(auftrag: Auftrag) -> list[str]:
+        auftrag.ausgabe.parent.mkdir(parents=True, exist_ok=True)
+        return arbeit(auftrag)
+
+    ergebnis = ausfuehren(auftraege, mit_ordner, jobs=args.jobs, fortschritt=sys.stderr)
+    ergebnis.fehler = fehler + ergebnis.fehler
+    if args.verbose:
+        for auftrag in ergebnis.ok:
+            print(f"{auftrag.eingabe} -> {auftrag.ausgabe}", file=sys.stderr)
+    zusammenfassung_ausgeben(ergebnis)
+    return ergebnis.rueckgabecode
+
+
+def _ziel_im_ordner(args: argparse.Namespace, datei: Datei, fmt: Format) -> Path | None:
+    if args.ausgabe_ordner is None:
+        return None
+    return args.ausgabe_ordner / datei.relativ.with_suffix(fmt.endung)
+
+
 def _befehl_convert(args: argparse.Namespace) -> int:
-    ergebnis = umwandeln(
-        args.eingabe,
-        args.ausgabe,
-        to=args.to,
-        overwrite=args.overwrite,
-        hintergrund=args.background,
-        seite=args.page,
-        bearbeitung=_bearbeitung(args),
-    )
-    return _ergebnis_melden(ergebnis, args)
+    bearbeitung = _bearbeitung(args)
+    einzeln = _einzeldatei(args)
+    if einzeln is not None:
+        ergebnis = umwandeln(
+            *einzeln,
+            to=args.to,
+            overwrite=args.overwrite,
+            hintergrund=args.background,
+            seite=args.page,
+            bearbeitung=bearbeitung,
+        )
+        return _ergebnis_melden(ergebnis, args)
+
+    if not args.to:
+        raise BedienFehler("Für mehrere Dateien oder Ordner bitte das Zielformat mit --to angeben.")
+    ziel = format_aus_name(args.to)
+
+    def ziel_fuer(datei: Datei) -> Path:
+        return _ziel_im_ordner(args, datei, ziel) or datei.pfad.with_suffix(ziel.endung)
+
+    def arbeit(auftrag: Auftrag) -> list[str]:
+        return umwandeln(
+            auftrag.eingabe,
+            auftrag.ausgabe,
+            to=args.to,
+            overwrite=args.overwrite,
+            hintergrund=args.background,
+            seite=args.page,
+            bearbeitung=bearbeitung,
+        ).hinweise
+
+    return _stapel(args, ziel_fuer, arbeit)
 
 
 def _befehl_bearbeiten(args: argparse.Namespace) -> int:
@@ -240,16 +372,30 @@ def _befehl_bearbeiten(args: argparse.Namespace) -> int:
         raise BedienFehler(
             "Keine Bearbeitung angegeben, z. B. --max 1200, --drehen 90 oder --zielgroesse 500KB."
         )
-    ergebnis = bearbeiten(
-        args.eingabe,
-        args.ausgabe,
-        to=args.to,
-        overwrite=args.overwrite,
-        hintergrund=args.background,
-        seite=args.page,
-        bearbeitung=bearbeitung,
-    )
-    return _ergebnis_melden(ergebnis, args)
+    optionen = {
+        "to": args.to,
+        "overwrite": args.overwrite,
+        "hintergrund": args.background,
+        "seite": args.page,
+        "bearbeitung": bearbeitung,
+    }
+    einzeln = _einzeldatei(args)
+    if einzeln is not None:
+        return _ergebnis_melden(bearbeiten(*einzeln, **optionen), args)
+
+    fest = format_aus_name(args.to) if args.to else None
+
+    def ziel_fuer(datei: Datei) -> Path:
+        fmt = fest or quellformat_erkennen(datei.pfad)
+        if fmt is None or not fmt.schreiben:
+            fmt = format_aus_name("png")
+        im_ordner = _ziel_im_ordner(args, datei, fmt)
+        return im_ordner or datei.pfad.with_name(f"{datei.pfad.stem}-bearbeitet{fmt.endung}")
+
+    def arbeit(auftrag: Auftrag) -> list[str]:
+        return bearbeiten(auftrag.eingabe, auftrag.ausgabe, **optionen).hinweise
+
+    return _stapel(args, ziel_fuer, arbeit)
 
 
 def _ergebnis_melden(ergebnis: Ergebnis, args: argparse.Namespace) -> int:
@@ -265,21 +411,39 @@ def _ergebnis_melden(ergebnis: Ergebnis, args: argparse.Namespace) -> int:
 
 
 def _befehl_hintergrund(args: argparse.Namespace) -> int:
-    ergebnis = hintergrund_entfernen(
-        args.eingabe,
-        args.ausgabe,
-        to=args.to,
-        modell=args.modell,
-        nur_maske=args.nur_maske,
-        hintergrund=args.background,
-        overwrite=args.overwrite,
-        seite=args.page,
-    )
-    _hinweise(ergebnis.hinweise)
-    if args.verbose:
-        print(f"Modell: {ergebnis.modell}", file=sys.stderr)
-    print(f"Gespeichert: {ergebnis.ausgabe}")
-    return 0
+    optionen = {
+        "to": args.to,
+        "modell": args.modell,
+        "nur_maske": args.nur_maske,
+        "hintergrund": args.background,
+        "overwrite": args.overwrite,
+        "seite": args.page,
+    }
+    einzeln = _einzeldatei(args)
+    if einzeln is not None:
+        ergebnis = hintergrund_entfernen(*einzeln, **optionen)
+        _hinweise(ergebnis.hinweise)
+        if args.verbose:
+            print(f"Modell: {ergebnis.modell}", file=sys.stderr)
+        print(f"Gespeichert: {ergebnis.ausgabe}")
+        return 0
+
+    ziel = format_aus_name(args.to or "png")
+    sitzung = []
+
+    def ziel_fuer(datei: Datei) -> Path:
+        im_ordner = _ziel_im_ordner(args, datei, ziel)
+        return im_ordner or standard_ausgabe(datei.pfad, ziel, args.nur_maske)
+
+    def vorbereiten() -> None:
+        sitzung.append(sitzung_erstellen(args.modell))
+
+    def arbeit(auftrag: Auftrag) -> list[str]:
+        return hintergrund_entfernen(
+            auftrag.eingabe, auftrag.ausgabe, sitzung=sitzung[0], **optionen
+        ).hinweise
+
+    return _stapel(args, ziel_fuer, arbeit, vorbereiten)
 
 
 def _befehl_formats(args: argparse.Namespace) -> int:
