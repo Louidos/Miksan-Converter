@@ -486,6 +486,14 @@ def speichern(
         if index == 0:
             icc = frame_icc
         frames.append(vorbereitet)
+    if len(frames) > 1 and len({f.mode for f in frames}) > 1:
+        # Einheitlicher Modus für alle Einzelbilder; ältere Pillow-Versionen scheitern sonst
+        # z. B. bei APNG mit gemischten Paletten- und RGB-Bildern.
+        modus = "RGBA" if any(_hat_transparenz(f) for f in frames) else "RGB"
+        if modus not in ziel.modi:
+            modus = ziel.modi[-1]
+        frames = [f.convert(modus) for f in frames]
+
     ico_bilder = None
     if ziel.name == "ico":
         frames = [_quadratisch(f) for f in frames]
