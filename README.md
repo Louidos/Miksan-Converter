@@ -11,6 +11,8 @@ Im Aufbau, noch keine veröffentlichte Version. Vorhanden:
   TIFF, ICO, TGA, PPM/PGM, AVIF, HEIC/HEIF, JPEG 2000, QOI; PDF als Ziel; SVG und Kamera-RAW als
   Eingabe (optional). Ausrichtung, Farbprofile, Animationen und mehrseitige TIFF bleiben erhalten.
 - Formatliste (`miksan formats`), siehe [docs/formate.md](docs/formate.md)
+- Hintergrund entfernen mit lokalem KI-Modell (`miksan hintergrund`, kurz `miksan bg`; optional),
+  siehe [docs/hintergrund.md](docs/hintergrund.md)
 
 Geplant: JPEG XL, PSD mit Ebenen.
 
@@ -33,6 +35,7 @@ Optionale Extras (der Kern bleibt schlank):
 ```bash
 pip install "miksan-converter[svg]"   # SVG als Eingabe
 pip install "miksan-converter[raw]"   # Kamera-RAW als Eingabe
+pip install "miksan-converter[ki]"    # Hintergrund entfernen (lokales KI-Modell)
 ```
 
 ## Start
@@ -43,6 +46,7 @@ miksan convert foto.png --to webp     # erzeugt foto.webp neben dem Original
 miksan convert IMG_0001.HEIC IMG_0001.jpg
 miksan convert logo.png logo.jpg --background "#000000"
 miksan convert scan.tif seite3.png --page 3
+miksan bg portrait.jpg portrait.png   # Hintergrund entfernen (Extra [ki])
 miksan formats                        # alle unterstützten Formate
 ```
 
@@ -77,4 +81,9 @@ Genutzte Bibliotheken und ihre Lizenzen:
 (GPL-2.0-or-later). Miksan-Converter selbst verteilt diese Bibliotheken nicht, sie werden bei der
 Installation von PyPI geladen; der Code dieses Projekts bleibt MIT. Wer ein Paket mit allen
 Abhängigkeiten weitergibt, muss deren Lizenzen beachten.
+| [rembg](https://github.com/danielgatis/rembg) (Extra `[ki]`) | Hintergrund entfernen | MIT ³ |
+| [ONNX Runtime](https://onnxruntime.ai/) (Extra `[ki]`) | KI-Modell auf der CPU ausführen | MIT |
+
 ² rawpy enthält LibRaw (LGPL-2.1 oder CDDL-1.0).
+³ Die Modelle werden beim ersten Gebrauch geladen; Lizenzen der Modelle stehen in
+[docs/hintergrund.md](docs/hintergrund.md).
