@@ -11,6 +11,9 @@ Im Aufbau, noch keine veröffentlichte Version. Vorhanden:
   TIFF, ICO, TGA, PPM/PGM, AVIF, HEIC/HEIF, JPEG 2000, QOI; PDF als Ziel; SVG und Kamera-RAW als
   Eingabe (optional). Ausrichtung, Farbprofile, Animationen und mehrseitige TIFF bleiben erhalten.
 - Formatliste (`miksan formats`), siehe [docs/formate.md](docs/formate.md)
+- Bilder skalieren, zuschneiden, drehen, spiegeln, komprimieren (Qualität oder Zielgrösse) und
+  Metadaten entfernen – beim Umwandeln oder mit `miksan bearbeiten`, siehe
+  [docs/bearbeiten.md](docs/bearbeiten.md)
 - Hintergrund entfernen mit lokalem KI-Modell (`miksan hintergrund`, kurz `miksan bg`; optional),
   siehe [docs/hintergrund.md](docs/hintergrund.md)
 
@@ -46,6 +49,8 @@ miksan convert foto.png --to webp     # erzeugt foto.webp neben dem Original
 miksan convert IMG_0001.HEIC IMG_0001.jpg
 miksan convert logo.png logo.jpg --background "#000000"
 miksan convert scan.tif seite3.png --page 3
+miksan convert gross.jpg klein.webp --max 1200
+miksan bearbeiten foto.jpg --zielgroesse 300KB --metadaten-entfernen
 miksan bg portrait.jpg portrait.png   # Hintergrund entfernen (Extra [ki])
 miksan formats                        # alle unterstützten Formate
 ```

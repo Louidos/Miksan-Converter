@@ -25,6 +25,15 @@ miksan convert <eingabe> --to FORMAT
 Welche Formate unterstützt werden und was beim Umwandeln erhalten bleibt, steht in
 [formate.md](formate.md).
 
+Alle Bearbeitungsoptionen (`--max`, `--zuschneiden`, `--drehen`, `--qualitaet`,
+`--zielgroesse`, `--metadaten-entfernen` …) funktionieren auch direkt bei `convert`, siehe
+[bearbeiten.md](bearbeiten.md).
+
+## `miksan bearbeiten` – Bild bearbeiten
+
+Alias `miksan edit`. Wie `convert`, aber ohne Ausgabedatei entsteht `<name>-bearbeitet` im
+selben Format. Details in [bearbeiten.md](bearbeiten.md).
+
 ## `miksan hintergrund` – Hintergrund entfernen
 
 Alias `miksan bg`, braucht das Extra `[ki]`. Details in [hintergrund.md](hintergrund.md).

@@ -9,8 +9,9 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from . import __version__
-from .convert import umwandeln
-from .fehler import MiksanFehler
+from .bearbeiten import REIHENFOLGE, Bearbeitung, groesse_parsen, zuschnitt_parsen
+from .convert import Ergebnis, bearbeiten, umwandeln
+from .fehler import BedienFehler, MiksanFehler
 from .formats import alle_formate, extra_installiert, markdown_tabelle, tabellen_zeilen
 from .hintergrund import STANDARD_MODELL, hintergrund_entfernen
 
@@ -51,6 +52,91 @@ def _datei_optionen(parser: argparse.ArgumentParser) -> None:
     _ausfuehrlich(parser)
 
 
+def _bearbeitungs_optionen(parser: argparse.ArgumentParser) -> None:
+    gruppe = parser.add_argument_group("Bearbeiten", "Reihenfolge: " + " -> ".join(REIHENFOLGE))
+    gruppe.add_argument(
+        "--breite",
+        "--width",
+        dest="breite",
+        type=_positive_zahl,
+        metavar="PX",
+        help="neue Breite (ohne --hoehe bleibt das Seitenverhältnis)",
+    )
+    gruppe.add_argument(
+        "--hoehe",
+        "--height",
+        dest="hoehe",
+        type=_positive_zahl,
+        metavar="PX",
+        help="neue Höhe (ohne --breite bleibt das Seitenverhältnis)",
+    )
+    gruppe.add_argument(
+        "--max",
+        dest="max_seite",
+        type=_positive_zahl,
+        metavar="PX",
+        help="längste Seite höchstens so lang (verkleinert nur, Seitenverhältnis bleibt)",
+    )
+    gruppe.add_argument(
+        "--zuschneiden",
+        "--crop",
+        dest="zuschneiden",
+        metavar="X,Y,B,H",
+        help="Ausschnitt: linke obere Ecke x,y sowie Breite und Höhe in Pixeln",
+    )
+    gruppe.add_argument(
+        "--drehen",
+        "--rotate",
+        dest="drehen",
+        type=int,
+        choices=(90, 180, 270),
+        help="im Uhrzeigersinn drehen",
+    )
+    gruppe.add_argument(
+        "--spiegeln",
+        "--flip",
+        dest="spiegeln",
+        choices=("h", "v"),
+        help="h = waagrecht (links/rechts), v = senkrecht (oben/unten)",
+    )
+    gruppe.add_argument(
+        "--qualitaet",
+        "--quality",
+        dest="qualitaet",
+        type=int,
+        metavar="1-100",
+        help="Qualität für JPEG, WebP, AVIF, HEIC",
+    )
+    gruppe.add_argument(
+        "--zielgroesse",
+        "--target-size",
+        dest="zielgroesse",
+        metavar="GROESSE",
+        help="höchstens so gross, z. B. 500KB oder 2MB (sucht die passende Qualität)",
+    )
+    gruppe.add_argument(
+        "--metadaten-entfernen",
+        "--strip",
+        dest="metadaten_entfernen",
+        action="store_true",
+        help="EXIF/GPS/XMP entfernen (Ausrichtung wird vorher angewendet)",
+    )
+
+
+def _bearbeitung(args: argparse.Namespace) -> Bearbeitung:
+    return Bearbeitung(
+        breite=args.breite,
+        hoehe=args.hoehe,
+        max_seite=args.max_seite,
+        zuschneiden=zuschnitt_parsen(args.zuschneiden) if args.zuschneiden else None,
+        drehen=args.drehen,
+        spiegeln=args.spiegeln,
+        qualitaet=args.qualitaet,
+        zielgroesse=groesse_parsen(args.zielgroesse) if args.zielgroesse else None,
+        metadaten_entfernen=args.metadaten_entfernen,
+    )
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="miksan",
@@ -67,7 +153,19 @@ def _parser() -> argparse.ArgumentParser:
         "Dateiinhalt erkannt, das Zielformat an der Endung der Ausgabe oder mit --to.",
     )
     _datei_optionen(convert)
+    _bearbeitungs_optionen(convert)
     convert.set_defaults(ausfuehren=_befehl_convert)
+
+    bearbeiten_befehl = befehle.add_parser(
+        "bearbeiten",
+        aliases=["edit"],
+        help="Bild skalieren, zuschneiden, drehen, komprimieren, Metadaten entfernen",
+        description="Bearbeitet ein Bild. Ohne Ausgabedatei entsteht <name>-bearbeitet im "
+        "selben Format neben dem Original.",
+    )
+    _datei_optionen(bearbeiten_befehl)
+    _bearbeitungs_optionen(bearbeiten_befehl)
+    bearbeiten_befehl.set_defaults(ausfuehren=_befehl_bearbeiten)
 
     hintergrund = befehle.add_parser(
         "hintergrund",
@@ -129,7 +227,32 @@ def _befehl_convert(args: argparse.Namespace) -> int:
         overwrite=args.overwrite,
         hintergrund=args.background,
         seite=args.page,
+        bearbeitung=_bearbeitung(args),
     )
+    return _ergebnis_melden(ergebnis, args)
+
+
+def _befehl_bearbeiten(args: argparse.Namespace) -> int:
+    bearbeitung = _bearbeitung(args)
+    if not bearbeitung.veraendert_pixel() and not (
+        bearbeitung.qualitaet or bearbeitung.zielgroesse or bearbeitung.metadaten_entfernen
+    ):
+        raise BedienFehler(
+            "Keine Bearbeitung angegeben, z. B. --max 1200, --drehen 90 oder --zielgroesse 500KB."
+        )
+    ergebnis = bearbeiten(
+        args.eingabe,
+        args.ausgabe,
+        to=args.to,
+        overwrite=args.overwrite,
+        hintergrund=args.background,
+        seite=args.page,
+        bearbeitung=bearbeitung,
+    )
+    return _ergebnis_melden(ergebnis, args)
+
+
+def _ergebnis_melden(ergebnis: Ergebnis, args: argparse.Namespace) -> int:
     _hinweise(ergebnis.hinweise)
     if args.verbose:
         print(
