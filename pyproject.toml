@@ -17,7 +17,13 @@ classifiers = [
   "Environment :: Console",
   "Topic :: Multimedia :: Graphics :: Graphics Conversion",
 ]
-dependencies = []
+dependencies = ["Pillow>=11.3"]
+
+[project.scripts]
+miksan = "miksan_converter.cli:main"
+
+[project.urls]
+Quellcode = "https://github.com/Louidos/Miksan-Converter"
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6"]

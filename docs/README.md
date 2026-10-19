@@ -1,3 +1,3 @@
 # Dokumentation
 
-- Bedienung und Formatliste folgen, sobald die Funktionen umgesetzt sind.
+- [Bedienung](bedienung.md) – Befehle, Optionen und Rückgabecodes
