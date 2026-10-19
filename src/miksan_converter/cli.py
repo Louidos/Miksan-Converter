@@ -12,6 +12,43 @@ from . import __version__
 from .convert import umwandeln
 from .fehler import MiksanFehler
 from .formats import alle_formate, extra_installiert, markdown_tabelle, tabellen_zeilen
+from .hintergrund import STANDARD_MODELL, hintergrund_entfernen
+
+
+def _ausfuehrlich(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "-v", "--verbose", "--ausfuehrlich", action="store_true", help="Details anzeigen"
+    )
+
+
+def _datei_optionen(parser: argparse.ArgumentParser) -> None:
+    """Optionen, die alle Befehle mit Ein- und Ausgabedatei gemeinsam haben."""
+    parser.add_argument("eingabe", type=Path, help="Eingabedatei")
+    parser.add_argument("ausgabe", type=Path, nargs="?", help="Ausgabedatei (optional)")
+    parser.add_argument("--to", "--nach", dest="to", metavar="FORMAT", help="Zielformat, z. B. jpg")
+    parser.add_argument(
+        "--overwrite",
+        "--ueberschreiben",
+        action="store_true",
+        help="vorhandene Zieldatei ersetzen",
+    )
+    parser.add_argument(
+        "--background",
+        "--hintergrundfarbe",
+        dest="background",
+        default="#ffffff",
+        metavar="FARBE",
+        help="Füllfarbe für Transparenz bei Zielen ohne Alpha, z. B. #000000 (Standard: weiss)",
+    )
+    parser.add_argument(
+        "--page",
+        "--seite",
+        dest="page",
+        type=_positive_zahl,
+        metavar="N",
+        help="nur diese Seite bzw. dieses Einzelbild übernehmen (ab 1)",
+    )
+    _ausfuehrlich(parser)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -29,37 +66,34 @@ def _parser() -> argparse.ArgumentParser:
         description="Wandelt ein Bild in ein anderes Format um. Das Eingabeformat wird am "
         "Dateiinhalt erkannt, das Zielformat an der Endung der Ausgabe oder mit --to.",
     )
-    convert.add_argument("eingabe", type=Path, help="Eingabedatei")
-    convert.add_argument("ausgabe", type=Path, nargs="?", help="Ausgabedatei (optional mit --to)")
-    convert.add_argument(
-        "--to", "--nach", dest="to", metavar="FORMAT", help="Zielformat, z. B. jpg"
-    )
-    convert.add_argument(
-        "--overwrite",
-        "--ueberschreiben",
-        action="store_true",
-        help="vorhandene Zieldatei ersetzen",
-    )
-    convert.add_argument(
-        "--background",
-        "--hintergrundfarbe",
-        dest="background",
-        default="#ffffff",
-        metavar="FARBE",
-        help="Füllfarbe für Transparenz bei Zielen ohne Alpha, z. B. #000000 (Standard: weiss)",
-    )
-    convert.add_argument(
-        "--page",
-        "--seite",
-        dest="page",
-        type=_positive_zahl,
-        metavar="N",
-        help="nur diese Seite bzw. dieses Einzelbild übernehmen (ab 1)",
-    )
-    convert.add_argument(
-        "-v", "--verbose", "--ausfuehrlich", action="store_true", help="Details anzeigen"
-    )
+    _datei_optionen(convert)
     convert.set_defaults(ausfuehren=_befehl_convert)
+
+    hintergrund = befehle.add_parser(
+        "hintergrund",
+        aliases=["bg"],
+        help="Hintergrund entfernen (lokales KI-Modell, Extra [ki])",
+        description="Entfernt den Hintergrund mit einem lokalen KI-Modell. Ohne Ausgabedatei "
+        "entsteht <name>-freigestellt.png neben dem Original. Das Modell wird beim ersten Mal "
+        "heruntergeladen und danach offline genutzt.",
+    )
+    _datei_optionen(hintergrund)
+    hintergrund.add_argument(
+        "--modell",
+        "--model",
+        dest="modell",
+        default=STANDARD_MODELL,
+        metavar="NAME",
+        help="klein (Standard, schnell), genau, person, sehr-genau oder ein rembg-Modellname",
+    )
+    hintergrund.add_argument(
+        "--nur-maske",
+        "--mask-only",
+        dest="nur_maske",
+        action="store_true",
+        help="nur die Maske ausgeben (weiss = Vordergrund)",
+    )
+    hintergrund.set_defaults(ausfuehren=_befehl_hintergrund)
 
     formats = befehle.add_parser(
         "formats", aliases=["formate"], help="unterstützte Formate auflisten"
@@ -67,9 +101,7 @@ def _parser() -> argparse.ArgumentParser:
     formats.add_argument(
         "--markdown", action="store_true", help="Tabelle im Markdown-Format ausgeben"
     )
-    formats.add_argument(
-        "-v", "--verbose", "--ausfuehrlich", action="store_true", help="Details anzeigen"
-    )
+    _ausfuehrlich(formats)
     formats.set_defaults(ausfuehren=_befehl_formats)
     return parser
 
@@ -105,6 +137,24 @@ def _befehl_convert(args: argparse.Namespace) -> int:
             f"{ergebnis.ausgabe} ({ergebnis.ausgabe_format.name})",
             file=sys.stderr,
         )
+    print(f"Gespeichert: {ergebnis.ausgabe}")
+    return 0
+
+
+def _befehl_hintergrund(args: argparse.Namespace) -> int:
+    ergebnis = hintergrund_entfernen(
+        args.eingabe,
+        args.ausgabe,
+        to=args.to,
+        modell=args.modell,
+        nur_maske=args.nur_maske,
+        hintergrund=args.background,
+        overwrite=args.overwrite,
+        seite=args.page,
+    )
+    _hinweise(ergebnis.hinweise)
+    if args.verbose:
+        print(f"Modell: {ergebnis.modell}", file=sys.stderr)
     print(f"Gespeichert: {ergebnis.ausgabe}")
     return 0
 

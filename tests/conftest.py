@@ -24,3 +24,16 @@ def png_datei(tmp_path: Path) -> Path:
     bild.paste((0, 0, 0, 0), (0, 0, 20, 30))
     bild.save(pfad)
     return pfad
+
+
+def pytest_addoption(parser):
+    parser.addoption("--slow", action="store_true", help="auch langsame Tests mit echtem Modell")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--slow"):
+        return
+    ueberspringen = pytest.mark.skip(reason="langsamer Test, nur mit --slow")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(ueberspringen)

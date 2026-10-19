@@ -22,6 +22,7 @@ dependencies = ["Pillow>=11.3", "pillow-heif>=0.22"]
 [project.optional-dependencies]
 svg = ["resvg-py>=0.2"]
 raw = ["rawpy>=0.21"]
+ki = ["rembg[cpu]>=2.0.60"]
 
 [project.scripts]
 miksan = "miksan_converter.cli:main"
@@ -38,6 +39,7 @@ packages = ["src/miksan_converter"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = ["slow: langsamer Test mit echtem KI-Modell (nur mit --slow, nicht in der CI)"]
 
 [tool.ruff]
 line-length = 100

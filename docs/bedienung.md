@@ -25,6 +25,10 @@ miksan convert <eingabe> --to FORMAT
 Welche Formate unterstützt werden und was beim Umwandeln erhalten bleibt, steht in
 [formate.md](formate.md).
 
+## `miksan hintergrund` – Hintergrund entfernen
+
+Alias `miksan bg`, braucht das Extra `[ki]`. Details in [hintergrund.md](hintergrund.md).
+
 ## `miksan formats` – Formatliste
 
 Zeigt alle unterstützten Formate mit Endungen, ob sie gelesen und geschrieben werden können,
