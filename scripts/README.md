@@ -1,3 +1,4 @@
 # Hilfsskripte
 
-Hier liegen kleine Hilfsskripte für die Entwicklung, z. B. zum Erzeugen von Testbildern.
+- `testbilder_erzeugen.py` – erzeugt kleine Testbilder für alle Formate (wird auch von den Tests
+  genutzt): `python scripts/testbilder_erzeugen.py [ZIELORDNER]`

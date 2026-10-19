@@ -1,7 +1,19 @@
+import importlib.util
 from pathlib import Path
 
 import pytest
 from PIL import Image
+
+_SKRIPT = Path(__file__).resolve().parent.parent / "scripts" / "testbilder_erzeugen.py"
+_spec = importlib.util.spec_from_file_location("testbilder_erzeugen", _SKRIPT)
+testbilder_erzeugen = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(testbilder_erzeugen)
+
+
+@pytest.fixture(scope="session")
+def testbilder(tmp_path_factory) -> dict[str, Path]:
+    """Alle Testbilder aus scripts/testbilder_erzeugen.py (einmal pro Testlauf erzeugt)."""
+    return testbilder_erzeugen.erzeugen(tmp_path_factory.mktemp("testbilder"))
 
 
 @pytest.fixture

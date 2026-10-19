@@ -10,3 +10,4 @@ die Versionen folgen [Semantic Versioning](https://semver.org/lang/de/).
 ### Hinzugefügt
 
 - Befehl `miksan convert` zum Umwandeln von Bildern und `miksan formats` für die Formatliste (#2)
+- Unterstützung für alle gängigen Bildformate inkl. HEIC, AVIF, WebP, TIFF, ICO, SVG und RAW (optional); Ausrichtung, Farbprofile, Animationen und mehrseitige TIFF bleiben erhalten, Transparenz wird bei JPEG & Co. auf `--background` gelegt (#3)

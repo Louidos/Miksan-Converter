@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Abhängigkeiten installieren
-        run: uv sync --locked
+        run: uv sync --locked --extra svg --extra raw
       - name: Lint
         run: uv run ruff check .
       - name: Tests

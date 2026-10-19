@@ -5,8 +5,14 @@ und ohne Telemetrie.
 
 ## Projektstand
 
-Im Aufbau, noch keine veröffentlichte Version. Vorhanden: Umwandeln zwischen PNG, JPEG, WebP, GIF,
-BMP und TIFF (`miksan convert`) und die Formatliste (`miksan formats`).
+Im Aufbau, noch keine veröffentlichte Version. Vorhanden:
+
+- Umwandeln zwischen allen gängigen Bildformaten (`miksan convert`): PNG, JPEG, WebP, GIF, BMP,
+  TIFF, ICO, TGA, PPM/PGM, AVIF, HEIC/HEIF, JPEG 2000, QOI; PDF als Ziel; SVG und Kamera-RAW als
+  Eingabe (optional). Ausrichtung, Farbprofile, Animationen und mehrseitige TIFF bleiben erhalten.
+- Formatliste (`miksan formats`), siehe [docs/formate.md](docs/formate.md)
+
+Geplant: JPEG XL, PSD mit Ebenen.
 
 ## Installation
 
@@ -22,11 +28,21 @@ Oder aus einem geklonten Repo:
 pip install .
 ```
 
+Optionale Extras (der Kern bleibt schlank):
+
+```bash
+pip install "miksan-converter[svg]"   # SVG als Eingabe
+pip install "miksan-converter[raw]"   # Kamera-RAW als Eingabe
+```
+
 ## Start
 
 ```bash
 miksan convert foto.png foto.jpg      # Zielformat aus der Endung
 miksan convert foto.png --to webp     # erzeugt foto.webp neben dem Original
+miksan convert IMG_0001.HEIC IMG_0001.jpg
+miksan convert logo.png logo.jpg --background "#000000"
+miksan convert scan.tif seite3.png --page 3
 miksan formats                        # alle unterstützten Formate
 ```
 
@@ -53,3 +69,12 @@ Genutzte Bibliotheken und ihre Lizenzen:
 | Bibliothek | Zweck | Lizenz |
 |---|---|---|
 | [Pillow](https://python-pillow.org/) | Bilder lesen und schreiben | MIT-CMU (HPND) |
+| [pillow-heif](https://github.com/bigcat88/pillow_heif) | HEIC/HEIF | BSD-3-Clause ¹ |
+| [resvg-py](https://github.com/baseplate-admin/resvg-py) (Extra `[svg]`) | SVG rendern | MIT |
+| [rawpy](https://github.com/letmaik/rawpy) (Extra `[raw]`) | Kamera-RAW entwickeln | MIT ² |
+
+¹ Die Binärpakete von pillow-heif enthalten libheif und libde265 (LGPL-3.0) sowie x265
+(GPL-2.0-or-later). Miksan-Converter selbst verteilt diese Bibliotheken nicht, sie werden bei der
+Installation von PyPI geladen; der Code dieses Projekts bleibt MIT. Wer ein Paket mit allen
+Abhängigkeiten weitergibt, muss deren Lizenzen beachten.
+² rawpy enthält LibRaw (LGPL-2.1 oder CDDL-1.0).

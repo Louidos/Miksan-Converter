@@ -17,7 +17,11 @@ classifiers = [
   "Environment :: Console",
   "Topic :: Multimedia :: Graphics :: Graphics Conversion",
 ]
-dependencies = ["Pillow>=11.3"]
+dependencies = ["Pillow>=11.3", "pillow-heif>=0.22"]
+
+[project.optional-dependencies]
+svg = ["resvg-py>=0.2"]
+raw = ["rawpy>=0.21"]
 
 [project.scripts]
 miksan = "miksan_converter.cli:main"
