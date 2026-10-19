@@ -5,7 +5,7 @@ und ohne Telemetrie.
 
 ## Projektstand
 
-Im Aufbau, noch keine veröffentlichte Version. Vorhanden:
+Aktuelle Version: **0.1.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
 
 - Umwandeln zwischen allen gängigen Bildformaten (`miksan convert`): PNG, JPEG, WebP, GIF, BMP,
   TIFF, ICO, TGA, PPM/PGM, AVIF, HEIC/HEIF, JPEG 2000, QOI; PDF als Ziel; SVG und Kamera-RAW als
@@ -26,7 +26,7 @@ Geplant: JPEG XL, PSD mit Ebenen.
 Voraussetzung: Python 3.11 oder neuer.
 
 ```bash
-pip install git+https://github.com/Louidos/Miksan-Converter.git
+pip install "git+https://github.com/Louidos/Miksan-Converter.git@v0.1.0"
 ```
 
 Oder aus einem geklonten Repo:
