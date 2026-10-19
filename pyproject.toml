@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "miksan-converter"
-version = "0.0.0"
+version = "0.1.0"
 description = "Leichtes Open-Source-Kommandozeilentool zum Umwandeln und Bearbeiten von Bildern"
 readme = "README.md"
 license = "MIT"

@@ -7,6 +7,8 @@ die Versionen folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 0.1.0 – 2026-10-19
+
 ### Hinzugefügt
 
 - Befehl `miksan convert` zum Umwandeln von Bildern und `miksan formats` für die Formatliste (#2)
