@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import io
 import os
 import re
@@ -14,12 +15,15 @@ import pillow_heif
 from PIL import Image, ImageCms, ImageColor, ImageSequence, UnidentifiedImageError
 
 from . import extras
+from .bearbeiten import Bearbeitung, frames_bearbeiten, verkleinern
 from .fehler import BedienFehler, MiksanFehler
 from .formats import (
     Format,
+    alle_formate,
     format_aus_endung,
     format_aus_name,
     format_aus_pil,
+    format_nach_name,
     ist_raw_signatur,
     ist_raw_tiff,
     ist_svg,
@@ -44,6 +48,8 @@ _DEUTSCHE_FARBEN = {
 }
 
 _ANIMIERTE_QUELLEN = {"GIF", "WEBP", "PNG", "APNG", "AVIF", "HEIF"}
+# Metadaten werden getrennt verwaltet und dürfen nicht über ``Image.info`` mitwandern
+_METADATEN_SCHLUESSEL = {"exif", "xmp", "XML:com.adobe.xmp", "icc_profile", "photoshop", "comment"}
 # Ziele, die Transparenz in Palettenbildern speichern können
 _PALETTE_TRANSPARENZ = {"png", "gif"}
 _GRAU_MODI = {"1", "L", "LA", "I", "I;16", "I;16B", "I;16L", "I;16N", "F"}
@@ -241,7 +247,7 @@ def _pillow_laden(bild: Image.Image, pfad: Path, seite: int | None, ziel: Format
             continue
         frame.load()
         kopie = frame.copy()
-        kopie.info = dict(frame.info)
+        kopie.info = {k: v for k, v in frame.info.items() if k not in _METADATEN_SCHLUESSEL}
         frames.append(_ausrichten(kopie, methode))
         dauern.append(int(frame.info.get("duration") or 100))
 
@@ -468,17 +474,15 @@ def _ziel_vorhanden(ziel_pfad: Path) -> MiksanFehler:
     )
 
 
-def speichern(
+def _speicherauftrag(
     bild: Bild,
-    ziel_pfad: Path,
     ziel: Format,
     *,
-    overwrite: bool = False,
-    hintergrund: tuple[int, int, int] = STANDARD_HINTERGRUND,
-    qualitaet: int | None = None,
-    metadaten: bool = True,
-) -> None:
-    """Speichert ``bild`` sicher als ``ziel`` nach ``ziel_pfad``."""
+    hintergrund: tuple[int, int, int],
+    qualitaet: int | None,
+    metadaten: bool,
+) -> tuple[Image.Image, dict]:
+    """Bereitet alle Einzelbilder vor und stellt die Speicheroptionen zusammen."""
     frames = []
     icc = None
     for index, frame in enumerate(bild.frames):
@@ -518,9 +522,94 @@ def speichern(
             optionen.update(duration=bild.dauern[: len(frames)], loop=bild.loop)
             if ziel.name == "gif" and any(_hat_transparenz(f) for f in frames):
                 optionen["disposal"] = 2
+    return erstes, optionen
 
-    def schreiben(datei):
-        erstes.save(datei, format=ziel.pil_name, **optionen)
+
+def kodieren(
+    bild: Bild,
+    ziel: Format,
+    *,
+    hintergrund: tuple[int, int, int] = STANDARD_HINTERGRUND,
+    qualitaet: int | None = None,
+    metadaten: bool = True,
+) -> bytes:
+    """Kodiert ``bild`` im Speicher und gibt die Bytes der Zieldatei zurück."""
+    erstes, optionen = _speicherauftrag(
+        bild, ziel, hintergrund=hintergrund, qualitaet=qualitaet, metadaten=metadaten
+    )
+    puffer = io.BytesIO()
+    try:
+        erstes.save(puffer, format=ziel.pil_name, **optionen)
+    except (OSError, ValueError, TypeError, KeyError) as fehler:
+        raise MiksanFehler(f"Kodieren als {ziel.name} fehlgeschlagen: {fehler}") from fehler
+    return puffer.getvalue()
+
+
+def _fuer_zielgroesse_kodieren(
+    bild: Bild, ziel: Format, zielgroesse: int, **optionen
+) -> tuple[bytes, list[str]]:
+    """Sucht die höchste Qualität, mit der die Datei höchstens ``zielgroesse`` Bytes hat.
+
+    Reicht selbst die niedrigste Qualität nicht, wird das Bild schrittweise verkleinert.
+    """
+    if not ziel.verlustbehaftet:
+        moegliche = ", ".join(f.name for f in alle_formate() if f.verlustbehaftet)
+        raise BedienFehler(
+            f"--zielgroesse geht nur bei verlustbehafteten Formaten ({moegliche}), "
+            f"nicht bei {ziel.name}."
+        )
+    hinweise: list[str] = []
+    original = bild.frames[0].size
+    for _ in range(12):
+        bestes: bytes | None = None
+        unten, oben = 1, 100
+        while unten <= oben:
+            mitte = (unten + oben) // 2
+            daten = kodieren(bild, ziel, qualitaet=mitte, **optionen)
+            if len(daten) <= zielgroesse:
+                bestes, unten = daten, mitte + 1
+            else:
+                oben = mitte - 1
+        if bestes is not None:
+            if bild.frames[0].size != original:
+                b, h = bild.frames[0].size
+                hinweise.append(f"Für die Zielgrösse wurde das Bild auf {b}x{h} Pixel verkleinert.")
+            return bestes, hinweise
+        kleinste = len(kodieren(bild, ziel, qualitaet=1, **optionen))
+        faktor = min(0.9, max(0.1, (zielgroesse / kleinste) ** 0.5 * 0.95))
+        if min(bild.frames[0].size) <= 1:
+            break
+        bild = dataclasses.replace(bild, frames=verkleinern(bild.frames, faktor))
+    raise MiksanFehler(f"Die Zielgrösse von {zielgroesse} Byte ist nicht erreichbar.")
+
+
+def speichern(
+    bild: Bild,
+    ziel_pfad: Path,
+    ziel: Format,
+    *,
+    overwrite: bool = False,
+    hintergrund: tuple[int, int, int] = STANDARD_HINTERGRUND,
+    qualitaet: int | None = None,
+    metadaten: bool = True,
+    zielgroesse: int | None = None,
+) -> list[str]:
+    """Speichert ``bild`` sicher als ``ziel`` nach ``ziel_pfad`` und gibt Hinweise zurück."""
+    hinweise: list[str] = []
+    optionen = {"hintergrund": hintergrund, "metadaten": metadaten}
+    if zielgroesse is not None:
+        daten, hinweise = _fuer_zielgroesse_kodieren(bild, ziel, zielgroesse, **optionen)
+
+        def schreiben(datei):
+            datei.write(daten)
+
+    else:
+        if qualitaet is not None and not ziel.verlustbehaftet and ziel.name != "pdf":
+            hinweise.append(f"--qualitaet wirkt bei {ziel.name} nicht (verlustfreies Format).")
+        erstes, save_optionen = _speicherauftrag(bild, ziel, qualitaet=qualitaet, **optionen)
+
+        def schreiben(datei):
+            erstes.save(datei, format=ziel.pil_name, **save_optionen)
 
     try:
         _datei_schreiben(ziel_pfad, schreiben, overwrite)
@@ -528,6 +617,7 @@ def speichern(
         raise
     except (OSError, ValueError, TypeError, KeyError) as fehler:
         raise MiksanFehler(f"'{ziel_pfad}' konnte nicht geschrieben werden: {fehler}") from fehler
+    return hinweise
 
 
 # --- Umwandeln ----------------------------------------------------------------
@@ -562,19 +652,97 @@ def umwandeln(
     overwrite: bool = False,
     hintergrund: tuple[int, int, int] | str = STANDARD_HINTERGRUND,
     seite: int | None = None,
+    bearbeitung: Bearbeitung | None = None,
 ) -> Ergebnis:
-    """Wandelt ``eingabe`` in das Zielformat um und schreibt eine neue Datei."""
+    """Wandelt ``eingabe`` in das Zielformat um (optional mit Bearbeitung) und schreibt eine
+    neue Datei."""
     eingabe = Path(eingabe)
     if isinstance(hintergrund, str):
         hintergrund = farbe_parsen(hintergrund)
     ziel_pfad, ziel_format = ziel_bestimmen(eingabe, Path(ausgabe) if ausgabe else None, to)
-    ziel_pruefen(eingabe, ziel_pfad, overwrite)
-
-    bild = laden(eingabe, seite=seite, ziel=ziel_format)
-    speichern(bild, ziel_pfad, ziel_format, overwrite=overwrite, hintergrund=hintergrund)
-    return Ergebnis(
-        eingabe, ziel_pfad, bild.quelle, ziel_format, hinweise_zum_laden(eingabe, bild, seite)
+    return _umwandeln_nach(
+        eingabe, ziel_pfad, ziel_format, overwrite, hintergrund, seite, bearbeitung
     )
+
+
+def _umwandeln_nach(
+    eingabe: Path,
+    ziel_pfad: Path,
+    ziel_format: Format,
+    overwrite: bool,
+    hintergrund: tuple[int, int, int],
+    seite: int | None,
+    bearbeitung: Bearbeitung | None,
+) -> Ergebnis:
+    ziel_pruefen(eingabe, ziel_pfad, overwrite)
+    bearbeitung = bearbeitung or Bearbeitung()
+    bild = laden(eingabe, seite=seite, ziel=ziel_format)
+    hinweise = hinweise_zum_laden(eingabe, bild, seite)
+    bild.frames = frames_bearbeiten(bild.frames, bearbeitung)
+    hinweise += speichern(
+        bild,
+        ziel_pfad,
+        ziel_format,
+        overwrite=overwrite,
+        hintergrund=hintergrund,
+        qualitaet=bearbeitung.qualitaet,
+        metadaten=not bearbeitung.metadaten_entfernen,
+        zielgroesse=bearbeitung.zielgroesse,
+    )
+    return Ergebnis(eingabe, ziel_pfad, bild.quelle, ziel_format, hinweise)
+
+
+def bearbeiten(
+    eingabe: Path,
+    ausgabe: Path | None = None,
+    *,
+    to: str | None = None,
+    overwrite: bool = False,
+    hintergrund: tuple[int, int, int] | str = STANDARD_HINTERGRUND,
+    seite: int | None = None,
+    bearbeitung: Bearbeitung | None = None,
+) -> Ergebnis:
+    """Wie ``umwandeln``, aber ohne Ausgabe entsteht ``<name>-bearbeitet`` im selben Format."""
+    eingabe = Path(eingabe)
+    if ausgabe is not None:
+        return umwandeln(
+            eingabe,
+            ausgabe,
+            to=to,
+            overwrite=overwrite,
+            hintergrund=hintergrund,
+            seite=seite,
+            bearbeitung=bearbeitung,
+        )
+    if isinstance(hintergrund, str):
+        hintergrund = farbe_parsen(hintergrund)
+    if to:
+        ziel_format = format_aus_name(to)
+    else:
+        quelle = quellformat_erkennen(eingabe)
+        ziel_format = quelle if quelle and quelle.schreiben else format_aus_name("png")
+    ziel_pfad = eingabe.with_name(f"{eingabe.stem}-bearbeitet{ziel_format.endung}")
+    return _umwandeln_nach(
+        eingabe, ziel_pfad, ziel_format, overwrite, hintergrund, seite, bearbeitung
+    )
+
+
+def quellformat_erkennen(pfad: Path) -> Format | None:
+    """Erkennt das Format am Inhalt, ohne das Bild zu dekodieren."""
+    if not Path(pfad).is_file():
+        raise MiksanFehler(f"Datei nicht gefunden: {pfad}")
+    try:
+        kopf = kopf_lesen(pfad)
+    except OSError as fehler:
+        raise MiksanFehler(f"'{pfad}' kann nicht gelesen werden: {fehler}") from fehler
+    if ist_svg(kopf):
+        return format_nach_name("svg")
+    if ist_raw_signatur(kopf):
+        return format_nach_name("raw")
+    with _pillow_oeffnen(pfad) as bild:
+        if bild.format == "TIFF" and ist_raw_tiff(bild):
+            return format_nach_name("raw")
+        return format_aus_pil(bild.format)
 
 
 __all__ = [
@@ -583,6 +751,8 @@ __all__ = [
     "farbe_parsen",
     "laden",
     "speichern",
+    "bearbeiten",
+    "kodieren",
     "umwandeln",
     "vorbereiten",
 ]
