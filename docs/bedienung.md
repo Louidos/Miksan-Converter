@@ -6,6 +6,7 @@
 miksan convert <eingabe> <ausgabe> [--to FORMAT] [--overwrite] [--background FARBE]
                                    [--page N] [--verbose]
 miksan convert <eingabe> --to FORMAT
+miksan convert <ordner|dateien|muster> --to FORMAT [-o ORDNER] [--rekursiv] [--jobs N]
 ```
 
 - Das **Eingabeformat** wird am Inhalt der Datei erkannt. Eine falsche Endung (z. B. ein PNG,
@@ -21,6 +22,8 @@ miksan convert <eingabe> --to FORMAT
 - `--page N` (Alias `--seite`): nur diese Seite bzw. dieses Einzelbild übernehmen (ab 1), z. B.
   aus einem mehrseitigen TIFF oder einer Animation.
 - `--verbose` (Alias `-v`, `--ausfuehrlich`) zeigt Details und bei Fehlern die technische Ursache.
+
+Mehrere Dateien, Ordner und Muster: siehe [ordner.md](ordner.md).
 
 Welche Formate unterstützt werden und was beim Umwandeln erhalten bleibt, steht in
 [formate.md](formate.md).
@@ -49,7 +52,7 @@ welches Extra nötig ist und welche Einschränkungen gelten (Alias `miksan forma
 | Code | Bedeutung |
 |---|---|
 | 0 | alles in Ordnung |
-| 1 | Fehler bei der Verarbeitung (z. B. Datei fehlt, beschädigt, Ziel vorhanden) |
+| 1 | Fehler bei der Verarbeitung (z. B. Datei fehlt, beschädigt, Ziel vorhanden); bei mehreren Dateien: mindestens eine Datei mit Fehler |
 | 2 | falsche Bedienung (z. B. unbekanntes Format, widersprüchliche Angaben) |
 | 3 | ein optionales Extra fehlt (die Meldung nennt den Installationsbefehl) |
 | 130 | mit Strg+C abgebrochen |

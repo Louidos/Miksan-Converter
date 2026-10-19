@@ -14,6 +14,8 @@ Im Aufbau, noch keine veröffentlichte Version. Vorhanden:
 - Bilder skalieren, zuschneiden, drehen, spiegeln, komprimieren (Qualität oder Zielgrösse) und
   Metadaten entfernen – beim Umwandeln oder mit `miksan bearbeiten`, siehe
   [docs/bearbeiten.md](docs/bearbeiten.md)
+- Ganze Ordner, mehrere Dateien und Muster wie `*.heic` auf einmal verarbeiten – parallel, mit
+  Fortschrittsanzeige und Zusammenfassung, siehe [docs/ordner.md](docs/ordner.md)
 - Hintergrund entfernen mit lokalem KI-Modell (`miksan hintergrund`, kurz `miksan bg`; optional),
   siehe [docs/hintergrund.md](docs/hintergrund.md)
 
@@ -52,6 +54,8 @@ miksan convert scan.tif seite3.png --page 3
 miksan convert gross.jpg klein.webp --max 1200
 miksan bearbeiten foto.jpg --zielgroesse 300KB --metadaten-entfernen
 miksan bg portrait.jpg portrait.png   # Hintergrund entfernen (Extra [ki])
+miksan convert fotos/ --to jpg -o fertig/        # ganzer Ordner
+miksan bg fotos/ -o freigestellt/ --rekursiv
 miksan formats                        # alle unterstützten Formate
 ```
 
