@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Umgebungen
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Werkzeuge
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Betriebssystem / Editoren
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Erzeugte Testbilder (werden per scripts/testbilder_erzeugen.py erstellt)
+tests/fixtures/erzeugt/
