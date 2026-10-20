@@ -13,7 +13,6 @@ from .bearbeiten import REIHENFOLGE, Bearbeitung, groesse_parsen, zuschnitt_pars
 from .convert import Ergebnis, bearbeiten, quellformat_erkennen, umwandeln
 from .fehler import BedienFehler, MiksanFehler
 from .formats import (
-    Format,
     alle_formate,
     extra_installiert,
     format_aus_name,
@@ -33,6 +32,8 @@ from .stapel import (
     ausfuehren,
     dateien_sammeln,
     ist_muster,
+    ziel_bearbeiten,
+    ziel_umwandeln,
     zusammenfassung_ausgeben,
 )
 
@@ -246,6 +247,14 @@ def _parser() -> argparse.ArgumentParser:
     )
     hintergrund.set_defaults(ausfuehren=_befehl_hintergrund)
 
+    gui = befehle.add_parser(
+        "gui",
+        aliases=["oberflaeche"],
+        help="grafische Oberfläche öffnen (Extra [gui])",
+        description="Öffnet das Fenster von Miksan-Converter. Dasselbe wie miksan-gui.",
+    )
+    gui.set_defaults(ausfuehren=_befehl_gui)
+
     formats = befehle.add_parser(
         "formats", aliases=["formate"], help="unterstützte Formate auflisten"
     )
@@ -323,12 +332,6 @@ def _stapel(
     return ergebnis.rueckgabecode
 
 
-def _ziel_im_ordner(args: argparse.Namespace, datei: Datei, fmt: Format) -> Path | None:
-    if args.ausgabe_ordner is None:
-        return None
-    return args.ausgabe_ordner / datei.relativ.with_suffix(fmt.endung)
-
-
 def _befehl_convert(args: argparse.Namespace) -> int:
     bearbeitung = _bearbeitung(args)
     einzeln = _einzeldatei(args)
@@ -348,7 +351,7 @@ def _befehl_convert(args: argparse.Namespace) -> int:
     ziel = format_aus_name(args.to)
 
     def ziel_fuer(datei: Datei) -> Path:
-        return _ziel_im_ordner(args, datei, ziel) or datei.pfad.with_suffix(ziel.endung)
+        return ziel_umwandeln(datei, ziel, args.ausgabe_ordner)
 
     def arbeit(auftrag: Auftrag) -> list[str]:
         return umwandeln(
@@ -389,8 +392,7 @@ def _befehl_bearbeiten(args: argparse.Namespace) -> int:
         fmt = fest or quellformat_erkennen(datei.pfad)
         if fmt is None or not fmt.schreiben:
             fmt = format_aus_name("png")
-        im_ordner = _ziel_im_ordner(args, datei, fmt)
-        return im_ordner or datei.pfad.with_name(f"{datei.pfad.stem}-bearbeitet{fmt.endung}")
+        return ziel_bearbeiten(datei, fmt, args.ausgabe_ordner)
 
     def arbeit(auftrag: Auftrag) -> list[str]:
         return bearbeiten(auftrag.eingabe, auftrag.ausgabe, **optionen).hinweise
@@ -432,8 +434,9 @@ def _befehl_hintergrund(args: argparse.Namespace) -> int:
     sitzung = []
 
     def ziel_fuer(datei: Datei) -> Path:
-        im_ordner = _ziel_im_ordner(args, datei, ziel)
-        return im_ordner or standard_ausgabe(datei.pfad, ziel, args.nur_maske)
+        if args.ausgabe_ordner is not None:
+            return ziel_umwandeln(datei, ziel, args.ausgabe_ordner)
+        return standard_ausgabe(datei.pfad, ziel, args.nur_maske)
 
     def vorbereiten() -> None:
         sitzung.append(sitzung_erstellen(args.modell))
@@ -444,6 +447,12 @@ def _befehl_hintergrund(args: argparse.Namespace) -> int:
         ).hinweise
 
     return _stapel(args, ziel_fuer, arbeit, vorbereiten)
+
+
+def _befehl_gui(args: argparse.Namespace) -> int:
+    from .gui import oberflaeche_starten
+
+    return oberflaeche_starten()
 
 
 def _befehl_formats(args: argparse.Namespace) -> int:

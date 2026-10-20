@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "miksan-converter"
 version = "0.1.0"
-description = "Leichtes Open-Source-Kommandozeilentool zum Umwandeln und Bearbeiten von Bildern"
+description = "Leichtes Open-Source-Tool (Kommandozeile und Oberfläche) zum Umwandeln und Bearbeiten von Bildern"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -15,6 +15,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent",
   "Environment :: Console",
+  "Environment :: X11 Applications :: Qt",
   "Topic :: Multimedia :: Graphics :: Graphics Conversion",
 ]
 dependencies = ["Pillow>=11.3", "pillow-heif>=0.22"]
@@ -23,22 +24,27 @@ dependencies = ["Pillow>=11.3", "pillow-heif>=0.22"]
 svg = ["resvg-py>=0.2"]
 raw = ["rawpy>=0.21"]
 ki = ["rembg[cpu]>=2.0.60"]
+gui = ["PySide6-Essentials>=6.7"]
 
 [project.scripts]
 miksan = "miksan_converter.cli:main"
+
+[project.gui-scripts]
+miksan-gui = "miksan_converter.gui:main"
 
 [project.urls]
 Quellcode = "https://github.com/Louidos/Miksan-Converter"
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = ["pytest>=8", "pytest-qt>=4.4", "ruff>=0.6"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/miksan_converter"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+# pytest-qt wird in tests/conftest.py nur geladen, wenn PySide6 (Extra [gui]) installiert ist
+addopts = "-ra -p no:pytest-qt"
 markers = ["slow: langsamer Test mit echtem KI-Modell (nur mit --slow, nicht in der CI)"]
 
 [tool.ruff]
