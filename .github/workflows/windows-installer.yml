@@ -1,0 +1,128 @@
+name: Windows-Installer
+
+on:
+  pull_request:
+    paths:
+      - "packaging/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "src/**"
+      - ".github/workflows/windows-installer.yml"
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # Installer an das Release anhängen
+
+jobs:
+  installer:
+    name: Installer bauen und testen
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Version prüfen (Release-Tag = pyproject.toml)
+        if: github.event_name == 'release'
+        run: |
+          $version = (uv run --no-project python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])").Trim()
+          if ("v$version" -ne "${{ github.event.release.tag_name }}") {
+            throw "Tag ${{ github.event.release.tag_name }} passt nicht zu Version $version"
+          }
+
+      - name: Abhängigkeiten installieren
+        run: uv sync --locked --no-dev --extra gui --extra svg --extra raw --extra ki --group installer
+
+      - name: Inno Setup installieren
+        run: choco install innosetup --yes --no-progress
+
+      - name: Installer bauen
+        run: uv run --no-sync python packaging/windows/bauen.py
+
+      - name: Installer finden
+        id: installer
+        run: |
+          $setup = Get-ChildItem dist\MiksanConverter-Setup-*.exe | Select-Object -First 1
+          if (-not $setup) { throw "Kein Installer in dist\ gefunden" }
+          "pfad=$($setup.FullName)" >> $env:GITHUB_OUTPUT
+          "name=$($setup.Name)" >> $env:GITHUB_OUTPUT
+          "Installer: $($setup.Name) ($([math]::Round($setup.Length / 1MB)) MB)" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: "Rauchtest: still installieren"
+        run: |
+          $p = Start-Process "${{ steps.installer.outputs.pfad }}" -Wait -PassThru `
+            -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/CURRENTUSER', '/NORESTART', '/TASKS=pfad', "/LOG=$env:RUNNER_TEMP\install.log"
+          if ($p.ExitCode -ne 0) { Get-Content "$env:RUNNER_TEMP\install.log"; throw "Installation fehlgeschlagen ($($p.ExitCode))" }
+          $app = "$env:LOCALAPPDATA\Programs\Miksan-Converter"
+          foreach ($datei in 'Miksan-Converter.exe', 'miksan.exe', 'unins000.exe') {
+            if (-not (Test-Path "$app\$datei")) { throw "$datei fehlt in $app" }
+          }
+          $pfad = [Environment]::GetEnvironmentVariable('Path', 'User')
+          if ($pfad -notlike "*$app*") { throw "Programmordner fehlt im PATH: $pfad" }
+          "APP=$app" >> $env:GITHUB_ENV
+
+      - name: "Rauchtest: Kommandozeile"
+        run: |
+          $miksan = "$env:APP\miksan.exe"
+          $version = (uv run --no-project python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])").Trim()
+          $ausgabe = & $miksan --version
+          if ($LASTEXITCODE -ne 0 -or $ausgabe -ne "miksan $version") { throw "--version: '$ausgabe'" }
+          $test = "$env:RUNNER_TEMP\rauchtest"
+          New-Item -ItemType Directory -Force $test | Out-Null
+          uv run --no-sync python -c "from PIL import Image; Image.new('RGBA', (120, 80), (20, 120, 200, 180)).save(r'$test\bild.png')"
+          foreach ($format in 'jpg', 'heic', 'webp') {
+            & $miksan convert "$test\bild.png" --to $format -o "$test\aus"
+            if ($LASTEXITCODE -ne 0) { throw "Umwandeln nach $format fehlgeschlagen" }
+          }
+          uv run --no-sync python -c "from PIL import Image; import pillow_heif; pillow_heif.register_heif_opener(); [print(f, Image.open(rf'$test\aus\bild.{f}').format) for f in ('jpg', 'heic', 'webp')]"
+
+      - name: "Rauchtest: Hintergrund entfernen (lädt das kleine Modell)"
+        run: |
+          $test = "$env:RUNNER_TEMP\rauchtest"
+          & "$env:APP\miksan.exe" bg "$test\bild.png" "$test\aus\frei.png" --modell klein
+          if ($LASTEXITCODE -ne 0) { throw "Hintergrund entfernen fehlgeschlagen" }
+          if (-not (Test-Path "$test\aus\frei.png")) { throw "frei.png fehlt" }
+          $modelle = "$env:LOCALAPPDATA\miksan-converter\modelle"
+          if (-not (Get-ChildItem -Recurse -Filter *.onnx $modelle)) { throw "Modell nicht in $modelle" }
+
+      - name: "Rauchtest: Oberfläche (Selbsttest)"
+        run: |
+          $bericht = "$env:RUNNER_TEMP\selbsttest.txt"
+          $p = Start-Process "$env:APP\Miksan-Converter.exe" -ArgumentList '--selbsttest', $bericht -Wait -PassThru
+          if (Test-Path $bericht) { Get-Content $bericht } else { "kein Bericht" }
+          if ($p.ExitCode -ne 0) { throw "Selbsttest fehlgeschlagen ($($p.ExitCode))" }
+
+      - name: "Rauchtest: still deinstallieren"
+        run: |
+          $p = Start-Process "$env:APP\unins000.exe" -Wait -PassThru `
+            -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
+          if ($p.ExitCode -ne 0) { throw "Deinstallation fehlgeschlagen ($($p.ExitCode))" }
+          # Der Deinstaller läuft als Kopie im Temp-Ordner weiter: auf das Ende warten
+          for ($i = 0; $i -lt 60 -and (Test-Path $env:APP); $i++) { Start-Sleep -Seconds 2 }
+          if (Test-Path $env:APP) { Get-ChildItem -Recurse $env:APP | Select-Object -First 20; throw "Programmordner nicht entfernt" }
+          $pfad = [Environment]::GetEnvironmentVariable('Path', 'User')
+          if ($pfad -like "*$env:APP*") { throw "PATH-Eintrag nicht entfernt: $pfad" }
+          # Still deinstalliert: Frage "Modelle löschen?" gilt als Nein, die Modelle bleiben
+          if (-not (Test-Path "$env:LOCALAPPDATA\miksan-converter\modelle")) { throw "Modelle wurden ohne Nachfrage gelöscht" }
+          if (Test-Path "$env:LOCALAPPDATA\miksan-converter\cache") { throw "Cache nicht entfernt" }
+
+      - name: Installer als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.installer.outputs.name }}
+          path: ${{ steps.installer.outputs.pfad }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Installer an das Release anhängen
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "${{ steps.installer.outputs.pfad }}" --clobber --repo "${{ github.repository }}"

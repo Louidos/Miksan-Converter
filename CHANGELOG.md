@@ -10,6 +10,7 @@ die Versionen folgen [Semantic Versioning](https://semver.org/lang/de/).
 ### Hinzugefügt
 
 - Grafische Oberfläche (`miksan-gui`): Bilder und Ordner per Drag & Drop umwandeln, bearbeiten und freistellen, mit Fortschritt und Zusammenfassung (Extra `[gui]`) (#14)
+- Windows-Installer (`MiksanConverter-Setup-X.Y.Z.exe`): Miksan-Converter ohne Python installieren, mit Startmenü-Eintrag, Kommandozeile `miksan` und Deinstallation (#15)
 
 ## 0.1.0 – 2026-10-19
 

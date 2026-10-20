@@ -21,12 +21,20 @@ Aktuelle Version: **0.1.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
 - Grafische Oberfläche (`miksan-gui`; optional): Bilder und Ordner per Drag & Drop umwandeln,
   bearbeiten und freistellen, mit Fortschritt, Abbrechen und Zusammenfassung, siehe
   [docs/oberflaeche.md](docs/oberflaeche.md) *(noch nicht veröffentlicht)*
+- Windows-Installer (`MiksanConverter-Setup-X.Y.Z.exe`) ohne Python, siehe
+  [docs/installer.md](docs/installer.md) *(noch nicht veröffentlicht)*
 
 Geplant: JPEG XL, PSD mit Ebenen.
 
 ## Installation
 
-Voraussetzung: Python 3.11 oder neuer.
+**Windows:** Installer `MiksanConverter-Setup-X.Y.Z.exe` unter
+[Releases](https://github.com/Louidos/Miksan-Converter/releases) herunterladen und ausführen –
+ohne Python, mit Oberfläche, Kommandozeile `miksan` und allen Extras. Weil der Installer nicht
+signiert ist, kann Windows SmartScreen beim ersten Start warnen: „Weitere Informationen“ →
+„Trotzdem ausführen“. Details in [docs/installer.md](docs/installer.md).
+
+**Mit pip** (Windows, macOS, Linux), Voraussetzung: Python 3.11 oder neuer.
 
 ```bash
 pip install "git+https://github.com/Louidos/Miksan-Converter.git@v0.1.0"

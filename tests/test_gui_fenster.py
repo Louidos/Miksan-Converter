@@ -183,3 +183,29 @@ def test_hintergrund_fragt_vor_dem_download(fenster, bilder: Path, monkeypatch, 
     fenster.starten()
     assert gefragt == ["klein"]
     assert not fenster.laeuft()
+
+
+def test_programm_icon():
+    assert not app.programm_icon().isNull()
+
+
+def test_selbsttest_fenster(qtbot):
+    from miksan_converter.gui import selbsttest
+
+    zeilen: list[str] = []
+    assert selbsttest._fenster_pruefen(zeilen)
+    assert zeilen == ["ok      Fenster: Fertig: 1 ok, 0 Fehler"]
+
+
+def test_selbsttest_bericht(qtbot, tmp_path: Path, monkeypatch):
+    from miksan_converter import gui
+    from miksan_converter.gui import selbsttest
+
+    monkeypatch.setattr(selbsttest, "MODULE", ("PIL", "gibt_es_nicht_123"))
+    bericht = tmp_path / "bericht.txt"
+    monkeypatch.setattr("sys.argv", ["miksan-gui", "--selbsttest", str(bericht)])
+    assert gui.main() == 1
+    text = bericht.read_text(encoding="utf-8")
+    assert "ok      PIL" in text
+    assert "FEHLER  gibt_es_nicht_123" in text
+    assert "Ergebnis: FEHLER" in text
