@@ -7,6 +7,8 @@ die Versionen folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 0.2.0 – 2026-10-20
+
 ### Hinzugefügt
 
 - Grafische Oberfläche (`miksan-gui`): Bilder und Ordner per Drag & Drop umwandeln, bearbeiten und freistellen, mit Fortschritt und Zusammenfassung (Extra `[gui]`) (#14)

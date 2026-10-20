@@ -5,7 +5,7 @@ grafischer Oberfläche, lokal, ohne Cloud und ohne Telemetrie.
 
 ## Projektstand
 
-Aktuelle Version: **0.1.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
+Aktuelle Version: **0.2.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
 
 - Umwandeln zwischen allen gängigen Bildformaten (`miksan convert`): PNG, JPEG, WebP, GIF, BMP,
   TIFF, ICO, TGA, PPM/PGM, AVIF, HEIC/HEIF, JPEG 2000, QOI; PDF als Ziel; SVG und Kamera-RAW als
@@ -20,9 +20,9 @@ Aktuelle Version: **0.1.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
   siehe [docs/hintergrund.md](docs/hintergrund.md)
 - Grafische Oberfläche (`miksan-gui`; optional): Bilder und Ordner per Drag & Drop umwandeln,
   bearbeiten und freistellen, mit Fortschritt, Abbrechen und Zusammenfassung, siehe
-  [docs/oberflaeche.md](docs/oberflaeche.md) *(noch nicht veröffentlicht)*
+  [docs/oberflaeche.md](docs/oberflaeche.md)
 - Windows-Installer (`MiksanConverter-Setup-X.Y.Z.exe`) ohne Python, siehe
-  [docs/installer.md](docs/installer.md) *(noch nicht veröffentlicht)*
+  [docs/installer.md](docs/installer.md)
 
 Geplant: JPEG XL, PSD mit Ebenen.
 
@@ -37,7 +37,7 @@ signiert ist, kann Windows SmartScreen beim ersten Start warnen: „Weitere Info
 **Mit pip** (Windows, macOS, Linux), Voraussetzung: Python 3.11 oder neuer.
 
 ```bash
-pip install "git+https://github.com/Louidos/Miksan-Converter.git@v0.1.0"
+pip install "git+https://github.com/Louidos/Miksan-Converter.git@v0.2.0"
 ```
 
 Oder aus einem geklonten Repo:
