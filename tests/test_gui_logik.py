@@ -88,8 +88,14 @@ def test_hintergrund_mit_ki_verfuegbar(monkeypatch):
 def test_modell_vorhanden(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("MIKSAN_MODELL_ORDNER", str(tmp_path))
     assert not logik.modell_vorhanden("klein")
-    (tmp_path / "u2netp.onnx").write_bytes(b"x")
+    (tmp_path / "u2netp.onnx").write_bytes(b"x")  # ältere rembg-Versionen
     assert logik.modell_vorhanden("klein")
+    assert not logik.modell_vorhanden("sehr-genau")
+    neu = tmp_path / "models" / "birefnet-general"  # neuere rembg-Versionen
+    neu.mkdir(parents=True)
+    assert not logik.modell_vorhanden("sehr-genau")
+    (neu / "BiRefNet-general-epoch_244.onnx").write_bytes(b"x")
+    assert logik.modell_vorhanden("sehr-genau")
 
 
 def test_planen_neben_dem_original(ordner: Path):

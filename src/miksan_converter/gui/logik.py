@@ -143,8 +143,16 @@ def modelle_fuer_auswahl() -> list[str]:
 
 
 def modell_vorhanden(modell: str) -> bool:
-    """Liegt das Modell schon lokal? Sonst wird es beim ersten Gebrauch heruntergeladen."""
-    return (modell_ordner() / f"{modell_name(modell)}.onnx").is_file()
+    """Liegt das Modell schon lokal? Sonst wird es beim ersten Gebrauch heruntergeladen.
+
+    Neuere rembg-Versionen legen Modelle unter ``models/<name>/`` ab, ältere direkt im Ordner.
+    """
+    ordner = modell_ordner()
+    name = modell_name(modell)
+    if (ordner / f"{name}.onnx").is_file():
+        return True
+    unterordner = ordner / "models" / name
+    return unterordner.is_dir() and any(unterordner.glob("*.onnx"))
 
 
 def bearbeitung_aus(einstellungen: Einstellungen) -> Bearbeitung:
