@@ -41,6 +41,11 @@ selben Format. Details in [bearbeiten.md](bearbeiten.md).
 
 Alias `miksan bg`, braucht das Extra `[ki]`. Details in [hintergrund.md](hintergrund.md).
 
+## `miksan gui` – grafische Oberfläche
+
+Alias `miksan oberflaeche`, braucht das Extra `[gui]`. Öffnet dasselbe Fenster wie `miksan-gui`.
+Details in [oberflaeche.md](oberflaeche.md).
+
 ## `miksan formats` – Formatliste
 
 Zeigt alle unterstützten Formate mit Endungen, ob sie gelesen und geschrieben werden können,

@@ -2,12 +2,14 @@
 
 import io
 import sys
+import threading
 from pathlib import Path
 
 import pytest
 from PIL import Image
 
 from miksan_converter.cli import main
+from miksan_converter.fehler import MiksanFehler
 from miksan_converter.stapel import Auftrag, ausfuehren, dateien_sammeln
 
 from .test_hintergrund import _falsches_rembg
@@ -195,3 +197,62 @@ def test_fortschritt_und_fehler_brechen_nicht_ab(tmp_path: Path):
     assert len(ergebnis.ok) == 4 and len(ergebnis.fehler) == 1
     assert ergebnis.rueckgabecode == 1
     assert "[5/5]" in terminal.getvalue()
+
+
+def test_rueckmeldung_nach_jedem_auftrag(tmp_path: Path):
+    auftraege = [Auftrag(tmp_path / str(i), tmp_path / f"{i}.out") for i in range(4)]
+    meldungen = []
+    aufrufer = threading.get_ident()
+
+    def rueckmeldung(fertig: int, gesamt: int, auftrag: Auftrag) -> None:
+        assert threading.get_ident() == aufrufer  # im aufrufenden Thread
+        meldungen.append((fertig, gesamt, auftrag))
+
+    ergebnis = ausfuehren(auftraege, lambda a: [], jobs=3, rueckmeldung=rueckmeldung)
+    assert [(f, g) for f, g, _ in meldungen] == [(1, 4), (2, 4), (3, 4), (4, 4)]
+    assert {id(a) for _, _, a in meldungen} == {id(a) for a in auftraege}
+    assert len(ergebnis.ok) == 4 and ergebnis.uebersprungen == []
+
+
+def test_rueckmeldung_auch_bei_fehlern(tmp_path: Path):
+    def arbeit(auftrag: Auftrag) -> list[str]:
+        raise MiksanFehler("geht nicht")
+
+    meldungen = []
+    auftraege = [Auftrag(tmp_path / "a", tmp_path / "a.out")]
+    ergebnis = ausfuehren(auftraege, arbeit, rueckmeldung=lambda *m: meldungen.append(m))
+    assert len(meldungen) == 1 and len(ergebnis.fehler) == 1
+
+
+def test_abbrechen_ueberspringt_nicht_gestartete(tmp_path: Path):
+    abbrechen = threading.Event()
+    gestartet = []
+
+    def arbeit(auftrag: Auftrag) -> list[str]:
+        gestartet.append(auftrag)
+        return []
+
+    def rueckmeldung(fertig: int, gesamt: int, auftrag: Auftrag) -> None:
+        abbrechen.set()  # nach dem ersten fertigen Auftrag abbrechen
+
+    # mit einem Job kann höchstens der zweite Auftrag schon gestartet sein
+    auftraege = [Auftrag(tmp_path / str(i), tmp_path / f"{i}.out") for i in range(10)]
+    ergebnis = ausfuehren(auftraege, arbeit, jobs=1, rueckmeldung=rueckmeldung, abbrechen=abbrechen)
+    assert 1 <= len(ergebnis.ok) <= 2
+    assert len(ergebnis.ok) + len(ergebnis.uebersprungen) == 10
+    assert len(gestartet) == len(ergebnis.ok)
+    assert ergebnis.fehler == [] and ergebnis.rueckgabecode == 0
+
+
+def test_abbrechen_vor_dem_start(tmp_path: Path):
+    abbrechen = threading.Event()
+    abbrechen.set()
+    auftraege = [Auftrag(tmp_path / str(i), tmp_path / f"{i}.out") for i in range(3)]
+    ergebnis = ausfuehren(auftraege, lambda a: pytest.fail("läuft"), abbrechen=abbrechen)
+    assert ergebnis.ok == [] and len(ergebnis.uebersprungen) == 3
+
+
+def test_ohne_abbrechen_alles_wie_bisher(tmp_path: Path):
+    auftraege = [Auftrag(tmp_path / str(i), tmp_path / f"{i}.out") for i in range(3)]
+    ergebnis = ausfuehren(auftraege, lambda a: None)
+    assert len(ergebnis.ok) == 3 and ergebnis.uebersprungen == [] and ergebnis.hinweise == []

@@ -9,6 +9,9 @@ jobs:
   test:
     name: ${{ matrix.os }} / Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
+    env:
+      # Fenster-Tests ohne Bildschirm
+      QT_QPA_PLATFORM: offscreen
     strategy:
       fail-fast: false
       matrix:
@@ -19,8 +22,14 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python }}
+      - name: Systembibliotheken für Qt (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
       - name: Abhängigkeiten installieren
-        run: uv sync --locked --extra svg --extra raw
+        run: uv sync --locked --extra svg --extra raw --extra gui
       - name: Lint
         run: uv run ruff check .
       - name: Tests

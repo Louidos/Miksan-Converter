@@ -239,7 +239,7 @@ _KURZNAMEN = {
 _PIL_ALIASE = {"MPO": "jpeg", "APNG": "png"}
 
 # Paketname des Extras -> Python-Modul, an dem es erkannt wird
-_EXTRA_MODULE = {"svg": "resvg_py", "raw": "rawpy", "ki": "rembg"}
+_EXTRA_MODULE = {"svg": "resvg_py", "raw": "rawpy", "ki": "rembg", "gui": "PySide6"}
 
 
 def alle_formate() -> tuple[Format, ...]:

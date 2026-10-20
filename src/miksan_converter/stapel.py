@@ -5,6 +5,7 @@ from __future__ import annotations
 import glob
 import os
 import sys
+import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
@@ -12,7 +13,7 @@ from pathlib import Path
 from typing import TextIO
 
 from .fehler import MiksanFehler
-from .formats import bekannte_bild_endungen
+from .formats import Format, bekannte_bild_endungen
 
 _MUSTER_ZEICHEN = set("*?[")
 
@@ -47,6 +48,7 @@ class StapelErgebnis:
     ok: list[Auftrag] = field(default_factory=list)
     fehler: list[tuple[Path, str]] = field(default_factory=list)
     hinweise: list[tuple[Path, str]] = field(default_factory=list)
+    uebersprungen: list[Auftrag] = field(default_factory=list)
 
     @property
     def rueckgabecode(self) -> int:
@@ -144,14 +146,35 @@ def auftraege_planen(
     return auftraege, fehler
 
 
+def ziel_umwandeln(datei: Datei, ziel: Format, ausgabe_ordner: Path | None) -> Path:
+    """Zieldatei beim Umwandeln: im Ausgabeordner (Struktur bleibt) oder neben dem Original."""
+    if ausgabe_ordner is not None:
+        return ausgabe_ordner / datei.relativ.with_suffix(ziel.endung)
+    return datei.pfad.with_suffix(ziel.endung)
+
+
+def ziel_bearbeiten(datei: Datei, ziel: Format, ausgabe_ordner: Path | None) -> Path:
+    """Zieldatei beim Bearbeiten: ohne Ausgabeordner ``<name>-bearbeitet`` neben dem Original."""
+    if ausgabe_ordner is not None:
+        return ausgabe_ordner / datei.relativ.with_suffix(ziel.endung)
+    return datei.pfad.with_name(f"{datei.pfad.stem}-bearbeitet{ziel.endung}")
+
+
 def ausfuehren(
     auftraege: list[Auftrag],
     arbeit: Callable[[Auftrag], list[str]],
     *,
     jobs: int | None = None,
     fortschritt: TextIO | None = None,
+    rueckmeldung: Callable[[int, int, Auftrag], None] | None = None,
+    abbrechen: threading.Event | None = None,
 ) -> StapelErgebnis:
-    """Führt ``arbeit`` für alle Aufträge parallel aus. Ein Fehler bricht den Lauf nicht ab."""
+    """Führt ``arbeit`` für alle Aufträge parallel aus. Ein Fehler bricht den Lauf nicht ab.
+
+    ``rueckmeldung(fertig, gesamt, auftrag)`` wird nach jedem Auftrag im aufrufenden Thread
+    aufgerufen. Ist ``abbrechen`` gesetzt, werden noch nicht gestartete Aufträge übersprungen
+    (``StapelErgebnis.uebersprungen``); laufende werden zu Ende geführt.
+    """
     ergebnis = StapelErgebnis()
     if not auftraege:
         return ergebnis
@@ -159,19 +182,29 @@ def ausfuehren(
     anzeigen = fortschritt is not None and fortschritt.isatty()
     gesamt = len(auftraege)
 
+    def starten(auftrag: Auftrag) -> list[str] | None:
+        if abbrechen is not None and abbrechen.is_set():
+            return None  # None = übersprungen
+        return arbeit(auftrag) or []
+
     with ThreadPoolExecutor(max_workers=jobs) as pool:
-        laufend = {pool.submit(arbeit, auftrag): auftrag for auftrag in auftraege}
+        laufend = {pool.submit(starten, auftrag): auftrag for auftrag in auftraege}
         for fertig, zukunft in enumerate(as_completed(laufend), start=1):
             auftrag = laufend[zukunft]
             try:
-                hinweise = zukunft.result() or []
+                hinweise = zukunft.result()
             except MiksanFehler as fehler:
                 ergebnis.fehler.append((auftrag.eingabe, str(fehler)))
             except Exception as fehler:  # unerwartet: trotzdem weitermachen
                 ergebnis.fehler.append((auftrag.eingabe, f"unerwarteter Fehler: {fehler}"))
             else:
-                ergebnis.ok.append(auftrag)
-                ergebnis.hinweise += [(auftrag.eingabe, h) for h in hinweise]
+                if hinweise is None:
+                    ergebnis.uebersprungen.append(auftrag)
+                else:
+                    ergebnis.ok.append(auftrag)
+                    ergebnis.hinweise += [(auftrag.eingabe, h) for h in hinweise]
+            if rueckmeldung is not None:
+                rueckmeldung(fertig, gesamt, auftrag)
             if anzeigen:
                 name = auftrag.eingabe.name
                 if len(name) > 40:

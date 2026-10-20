@@ -1,8 +1,14 @@
 import importlib.util
+import os
 from pathlib import Path
 
 import pytest
 from PIL import Image
+
+# Fenster-Tests brauchen das Extra [gui]; ohne PySide6 wird pytest-qt gar nicht erst geladen
+QT_VORHANDEN = importlib.util.find_spec("PySide6") is not None
+pytest_plugins = ["pytestqt.plugin"] if QT_VORHANDEN else []
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 _SKRIPT = Path(__file__).resolve().parent.parent / "scripts" / "testbilder_erzeugen.py"
 _spec = importlib.util.spec_from_file_location("testbilder_erzeugen", _SKRIPT)

@@ -1,7 +1,7 @@
 # Miksan-Converter
 
-Leichtes Open-Source-Kommandozeilentool zum Umwandeln und Bearbeiten von Bildern – lokal, ohne Cloud
-und ohne Telemetrie.
+Leichtes Open-Source-Tool zum Umwandeln und Bearbeiten von Bildern – mit Kommandozeile und
+grafischer Oberfläche, lokal, ohne Cloud und ohne Telemetrie.
 
 ## Projektstand
 
@@ -18,6 +18,9 @@ Aktuelle Version: **0.1.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
   Fortschrittsanzeige und Zusammenfassung, siehe [docs/ordner.md](docs/ordner.md)
 - Hintergrund entfernen mit lokalem KI-Modell (`miksan hintergrund`, kurz `miksan bg`; optional),
   siehe [docs/hintergrund.md](docs/hintergrund.md)
+- Grafische Oberfläche (`miksan-gui`; optional): Bilder und Ordner per Drag & Drop umwandeln,
+  bearbeiten und freistellen, mit Fortschritt, Abbrechen und Zusammenfassung, siehe
+  [docs/oberflaeche.md](docs/oberflaeche.md) *(noch nicht veröffentlicht)*
 
 Geplant: JPEG XL, PSD mit Ebenen.
 
@@ -41,9 +44,19 @@ Optionale Extras (der Kern bleibt schlank):
 pip install "miksan-converter[svg]"   # SVG als Eingabe
 pip install "miksan-converter[raw]"   # Kamera-RAW als Eingabe
 pip install "miksan-converter[ki]"    # Hintergrund entfernen (lokales KI-Modell)
+pip install "miksan-converter[gui]"   # grafische Oberfläche (miksan-gui)
+pip install "miksan-converter[gui,ki,svg,raw]"   # alles
 ```
 
 ## Start
+
+Grafische Oberfläche (Extra `[gui]`):
+
+```bash
+miksan-gui                            # oder: miksan gui
+```
+
+Kommandozeile:
 
 ```bash
 miksan convert foto.png foto.jpg      # Zielformat aus der Endung
@@ -85,14 +98,16 @@ Genutzte Bibliotheken und ihre Lizenzen:
 | [pillow-heif](https://github.com/bigcat88/pillow_heif) | HEIC/HEIF | BSD-3-Clause ¹ |
 | [resvg-py](https://github.com/baseplate-admin/resvg-py) (Extra `[svg]`) | SVG rendern | MIT |
 | [rawpy](https://github.com/letmaik/rawpy) (Extra `[raw]`) | Kamera-RAW entwickeln | MIT ² |
+| [rembg](https://github.com/danielgatis/rembg) (Extra `[ki]`) | Hintergrund entfernen | MIT ³ |
+| [ONNX Runtime](https://onnxruntime.ai/) (Extra `[ki]`) | KI-Modell auf der CPU ausführen | MIT |
+| [PySide6](https://doc.qt.io/qtforpython-6/) (Extra `[gui]`) | grafische Oberfläche (Qt) | LGPL-3.0 ⁴ |
 
 ¹ Die Binärpakete von pillow-heif enthalten libheif und libde265 (LGPL-3.0) sowie x265
 (GPL-2.0-or-later). Miksan-Converter selbst verteilt diese Bibliotheken nicht, sie werden bei der
 Installation von PyPI geladen; der Code dieses Projekts bleibt MIT. Wer ein Paket mit allen
 Abhängigkeiten weitergibt, muss deren Lizenzen beachten.
-| [rembg](https://github.com/danielgatis/rembg) (Extra `[ki]`) | Hintergrund entfernen | MIT ³ |
-| [ONNX Runtime](https://onnxruntime.ai/) (Extra `[ki]`) | KI-Modell auf der CPU ausführen | MIT |
-
 ² rawpy enthält LibRaw (LGPL-2.1 oder CDDL-1.0).
 ³ Die Modelle werden beim ersten Gebrauch geladen; Lizenzen der Modelle stehen in
 [docs/hintergrund.md](docs/hintergrund.md).
+⁴ PySide6 und Qt stehen unter LGPL-3.0. Miksan-Converter bindet sie nur dynamisch ein und
+verändert sie nicht; der Code dieses Projekts bleibt MIT.
