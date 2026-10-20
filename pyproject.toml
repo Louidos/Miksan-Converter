@@ -37,6 +37,8 @@ Quellcode = "https://github.com/Louidos/Miksan-Converter"
 
 [dependency-groups]
 dev = ["pytest>=8", "pytest-qt>=4.4", "ruff>=0.6"]
+# Windows-Installer bauen (packaging/windows/bauen.py)
+installer = ["pyinstaller>=6.10"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/miksan_converter"]
