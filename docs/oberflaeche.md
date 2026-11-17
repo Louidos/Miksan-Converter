@@ -3,7 +3,7 @@
 Miksan-Converter lässt sich auch ohne Kommandozeile bedienen: Dateien ins Fenster ziehen,
 Werkzeug wählen, Optionen einstellen, den blauen Knopf drücken.
 
-![Hauptfenster](bilder/oberflaeche.png)
+![Startseite mit Seitenleiste und passenden Werkzeugen](bilder/startseite.png)
 
 ## Installation und Start
 
@@ -70,6 +70,8 @@ erhalten, soweit die Dateien zum neuen Werkzeug passen.
 
 ## Werkzeuge
 
+![Umwandeln mit Dateiliste und Vorschau](bilder/umwandeln.png)
+
 - **Umwandeln** – Zielformat und Qualität; unter „Erweitert“ maximale Grösse,
   Hintergrundfarbe (für Formate ohne Transparenz, z. B. JPEG) und Metadaten entfernen.
   Formate, die auf diesem Rechner nicht verfügbar sind, sind ausgegraut (der Tooltip sagt
@@ -110,6 +112,29 @@ werden noch fertig. Danach steht die Zusammenfassung unter dem Balken (z. B. „
 1 Fehler, 2 Hinweise“), darunter die Fehler und Hinweise pro Datei. **Ausgabeordner öffnen**
 zeigt die Ergebnisse im Dateimanager.
 
+### PDF und Video & Audio
+
+![Seiten drehen & löschen mit Seiten-Miniaturen](bilder/pdf.png)
+
+![Video umwandeln mit Vorschaubild und Dauer](bilder/video.png)
+
+Details zu den PDF-Werkzeugen in [pdf.md](pdf.md), zu Video und Audio in
+[video-audio.md](video-audio.md), zu Zuschneiden, Wasserzeichen, Umbenennen, Animation und
+Icon-Set in [werkzeuge.md](werkzeuge.md).
+
+## Windows-Komfort
+
+- **Rechtsklick im Explorer**: Der Installer trägt (Standard: an) „Mit Miksan-Converter öffnen“
+  für Bilder, PDFs, Videos, Tondateien und Ordner ein. Die App öffnet sich mit den Dateien auf
+  der Startseite und bietet die passenden Werkzeuge an.
+- **Nur ein Fenster**: Wird die App ein zweites Mal gestartet (z. B. per Rechtsklick oder mit
+  mehreren markierten Dateien), bekommt das laufende Fenster die Dateien und kommt nach vorne.
+- **Nach dem Lauf** erscheint über dem Fortschritt eine Meldung mit **Ordner öffnen**; ist das
+  Fenster im Hintergrund, blinkt das Taskleisten-Symbol.
+- **Fortschritt in der Taskleiste**: Das Symbol zeigt den Fortschritt grün an (Windows).
+- **Schneller Start**: KI (rembg/ONNX), PDF und ffmpeg werden erst geladen, wenn ein Werkzeug
+  sie braucht; auch die Werkzeug-Seiten entstehen erst beim ersten Öffnen.
+
 ## Einstellungen und Info
 
 - **Einstellungen** (gelten für alle Werkzeuge, werden sofort gespeichert):
@@ -130,6 +155,8 @@ zeigt die Ergebnisse im Dateimanager.
 | Esc | abbrechen |
 
 ### Hintergrund entfernen
+
+![Hintergrund entfernen mit Vorschau](bilder/hintergrund.png)
 
 Die Modellauswahl zeigt Name, Zweck und Grösse und ob das Modell schon geladen ist. Fehlt es,
 lädt der Knopf **Herunterladen** es einmalig mit Fortschrittsbalken; erst danach lässt sich

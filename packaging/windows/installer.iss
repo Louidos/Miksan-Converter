@@ -13,6 +13,9 @@
 #ifndef Repo
   #define Repo "..\.."
 #endif
+#ifndef Kontext
+  #define Kontext "..\..\build\kontextmenue.iss"
+#endif
 
 #define AppName "Miksan-Converter"
 #define AppExe "Miksan-Converter.exe"
@@ -46,6 +49,7 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 ChangesEnvironment=yes
+ChangesAssociations=yes
 CloseApplications=yes
 
 [Languages]
@@ -60,16 +64,24 @@ en.Zusatz=Additional options:
 de.ModelleLoeschen=Sollen auch die heruntergeladenen KI-Modelle gelöscht werden?%n%n%1%n%nBei „Nein“ bleiben sie für eine spätere Installation erhalten.
 en.ModelleLoeschen=Do you also want to delete the downloaded AI models?%n%n%1%n%nChoose "No" to keep them for a later installation.
 de.KommandozeileName=Miksan-Converter (Kommandozeile)
+de.KontextAufgabe=Im Explorer-Rechtsklick-Menü anzeigen („Mit Miksan-Converter öffnen“)
+en.KontextAufgabe=Show in the Explorer context menu ("Open with Miksan-Converter")
+de.KontextEintrag=Mit Miksan-Converter öffnen
+en.KontextEintrag=Open with Miksan-Converter
 en.KommandozeileName=Miksan-Converter (command line)
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "pfad"; Description: "{cm:PfadAufgabe}"; GroupDescription: "{cm:Zusatz}"; Flags: unchecked
+Name: "kontextmenue"; Description: "{cm:KontextAufgabe}"; GroupDescription: "{cm:Zusatz}"
 
 [Files]
 Source: "{#Quelle}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Lizenztexte mitgelieferter Programme und Modelle (ffmpeg: GPL-3.0, Modell u2netp: Apache-2.0)
 Source: "lizenzen\*"; DestDir: "{app}\lizenzen"; Flags: ignoreversion
+
+; Rechtsklick-Menü für Bilder, PDFs, Videos, Tondateien und Ordner (von bauen.py erzeugt)
+#include Kontext
 
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"

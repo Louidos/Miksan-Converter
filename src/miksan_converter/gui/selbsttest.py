@@ -145,3 +145,32 @@ def selbsttest(bericht: Path | None = None) -> int:
     if sys.stdout is not None:  # ohne Konsole (Miksan-Converter.exe) gibt es kein stdout
         sys.stdout.write(text)
     return 0 if ok else 1
+
+
+def startzeit(bericht: Path | None = None) -> int:
+    """Misst, wie lange es bis zum sichtbaren Fenster dauert (versteckt: ``--startzeit``)."""
+    beginn = time.perf_counter()
+    from PySide6.QtCore import QSettings
+    from PySide6.QtWidgets import QApplication
+
+    from . import design
+    from .fenster import Hauptfenster
+
+    design.hohe_aufloesung_einrichten()
+    app = QApplication.instance() or QApplication(sys.argv[:1])
+    design.anwenden(app)
+    with tempfile.TemporaryDirectory(prefix="miksan-startzeit-") as ordner:
+        settings = QSettings(str(Path(ordner) / "e.ini"), QSettings.Format.IniFormat)
+        fenster = Hauptfenster(settings)
+        fenster.show()
+        app.processEvents()
+        dauer = (time.perf_counter() - beginn) * 1000
+        schwer = sorted(m for m in ("rembg", "onnxruntime", "pypdf", "pypdfium2", "imageio_ffmpeg")
+                        if m in sys.modules)  # fmt: skip
+        fenster.close()
+    text = f"Fenster sichtbar nach {dauer:.0f} ms; schwere Module geladen: {schwer or 'keine'}\n"
+    if bericht is not None:
+        bericht.write_text(text, encoding="utf-8")
+    if sys.stdout is not None:
+        sys.stdout.write(text)
+    return 0

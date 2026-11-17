@@ -68,7 +68,18 @@ def ffmpeg_finden() -> Path | None:
 
 
 def ffmpeg_vorhanden() -> bool:
-    return ffmpeg_finden() is not None
+    """Schnelle Prüfung für die Seitenleiste: lädt ``imageio_ffmpeg`` noch nicht."""
+    import importlib.util
+
+    for kandidat in (_eigener_pfad, os.environ.get("MIKSAN_FFMPEG")):
+        if kandidat and Path(kandidat).is_file():
+            return True
+    if shutil.which("ffmpeg"):
+        return True
+    try:
+        return importlib.util.find_spec("imageio_ffmpeg") is not None
+    except (ImportError, ValueError):  # z. B. Eintrag in sys.modules ist None
+        return False
 
 
 def ffmpeg() -> Path:

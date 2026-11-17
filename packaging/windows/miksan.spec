@@ -35,6 +35,7 @@ for paket in ("miksan_converter", "pillow_heif", "pymatting", "pypdf", "pypdfium
 versteckt += collect_submodules(
     "rembg", filter=lambda name: not name.startswith(("rembg.cli", "rembg.commands"))
 )
+versteckt += ["PySide6.QtNetwork"]  # nur ein Fenster (QLocalServer)
 versteckt += ["resvg_py", "rawpy", "rawpy._rawpy", "onnxruntime", "PySide6.QtSvg"]
 versteckt += collect_submodules("pypdfium2_raw") + collect_submodules("pypdfium2_cfg")
 
@@ -73,7 +74,6 @@ weglassen = [
     "matplotlib",
     "IPython",
     "pytest",
-    "PySide6.QtNetwork",
     "PySide6.QtQml",
     "PySide6.QtQuick",
     "PySide6.QtWebEngineCore",

@@ -168,7 +168,11 @@ class WerkzeugSeite(QWidget):
         rollen.setFrameShape(QScrollArea.Shape.NoFrame)
         rollen.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         rollen.setWidget(self.optionen)
-        rollen.setMinimumWidth(design.abstand(40))
+        # so breit, dass kein Feld abgeschnitten wird
+        rand = rollen.verticalScrollBar().sizeHint().width() + design.abstand(1)
+        rollen.setMinimumWidth(
+            max(design.abstand(40), self.optionen.minimumSizeHint().width() + rand)
+        )
         return rollen
 
     def optionen_aufbauen(self) -> None:
@@ -228,6 +232,8 @@ class WerkzeugSeite(QWidget):
         if self.laeuft():
             return []
         neu, abgelehnt = self.liste.pfade_hinzufuegen(pfade)
+        if neu:  # die neue Datei gleich in Vorschau/Miniaturen zeigen
+            self.liste.setCurrentRow(self.pfade().index(neu[0]))
         if abgelehnt:
             namen = ", ".join(Path(p).name for p in abgelehnt[:3])
             mehr = " …" if len(abgelehnt) > 3 else ""
@@ -328,6 +334,7 @@ class WerkzeugSeite(QWidget):
         self.einstellungen_speichern()
         self.letztes_ergebnis = None
         self.liste.status_zuruecksetzen()
+        self.ablauf.banner.setVisible(False)
         self.ablauf.meldungen_setzen([])
         self.ablauf.oeffnen_setzen(None)
         self.ablauf.fortschritt.setRange(0, 0)  # unbestimmt, bis die erste Datei fertig ist
@@ -397,6 +404,10 @@ class WerkzeugSeite(QWidget):
         self.ablauf.meldungen_setzen(logik.meldungen(ergebnis))
         self.liste.status_setzen(ergebnis)
         self.ablauf.oeffnen_setzen(self.ausgabe_ordner_von(ergebnis))
+        if gesamt:
+            self.ablauf.fertig_melden(
+                f"Fertig: {logik.zusammenfassung(ergebnis)}", bool(ergebnis.fehler)
+            )
 
     def schliessen(self) -> None:
         """Beim Schliessen des Fensters: laufende Arbeit beenden, Einstellungen sichern."""

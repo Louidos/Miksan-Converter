@@ -62,6 +62,7 @@ def test_zielgroesse_bitraten():
 
 def test_ohne_ffmpeg_klare_meldung(monkeypatch, tmp_path: Path, capsys):
     monkeypatch.setattr(medien, "ffmpeg_finden", lambda: None)
+    monkeypatch.setattr(medien, "ffmpeg_vorhanden", lambda: False)
     (tmp_path / "a.mov").write_bytes(b"x")
     assert main(["video", "umwandeln", str(tmp_path / "a.mov")]) == 3
     assert "miksan-converter[medien]" in capsys.readouterr().err

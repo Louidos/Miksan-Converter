@@ -31,10 +31,18 @@ Aktuelle Version: **0.2.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
   speichern; Ton in MP3, WAV, FLAC, OGG, Opus, M4A – siehe [docs/video-audio.md](docs/video-audio.md)
 - PDF-Werkzeuge (`miksan pdf`; optional): zusammenfügen, teilen, Seiten drehen und löschen,
   PDF → Bilder, Bilder → PDF, verkleinern – auch in der Oberfläche, siehe [docs/pdf.md](docs/pdf.md)
-- Windows-Installer (`MiksanConverter-Setup-X.Y.Z.exe`) ohne Python, siehe
+- Windows-Installer (`MiksanConverter-Setup-X.Y.Z.exe`) ohne Python, mit Rechtsklick
+  „Mit Miksan-Converter öffnen“, nur einem Fenster und Fortschritt in der Taskleiste, siehe
   [docs/installer.md](docs/installer.md)
 
-Geplant: JPEG XL, PSD mit Ebenen.
+Geplant: JPEG XL, PSD mit Ebenen, Untertitel bei Videos, signierter Windows-Installer.
+
+![Miksan-Converter: Startseite mit Seitenleiste](docs/bilder/startseite.png)
+
+Weitere Bilder: [Umwandeln mit Vorschau](docs/bilder/umwandeln.png),
+[Hintergrund entfernen](docs/bilder/hintergrund.png), [PDF](docs/bilder/pdf.png),
+[Video](docs/bilder/video.png) – Beschreibung aller Werkzeuge in
+[docs/oberflaeche.md](docs/oberflaeche.md).
 
 ## Installation
 

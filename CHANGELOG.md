@@ -14,6 +14,7 @@ die Versionen folgen [Semantic Versioning](https://semver.org/lang/de/).
 - PDF-Werkzeuge: zusammenfügen, teilen, Seiten drehen/löschen, PDF ↔ Bilder, verkleinern (Extra `[pdf]`) (#23)
 - Neue Werkzeuge: Wasserzeichen, Stapel-Umbenennen, Animation erstellen/zerlegen, Icon-Set, Zuschneiden mit der Maus (#24)
 - Video und Audio umwandeln, kürzen und verkleinern, Video → GIF, Ton aus Video herausziehen (Extra `[medien]`) (#25)
+- Windows: Rechtsklick „Mit Miksan-Converter öffnen“, nur noch ein Fenster, Fortschritt in der Taskleiste; schnellerer Start (#26)
 
 ### Geändert
 
