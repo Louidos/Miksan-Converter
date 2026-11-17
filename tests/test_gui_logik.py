@@ -197,7 +197,10 @@ def test_werkzeuge_nach_bereich_und_art(tmp_path: Path):
     from miksan_converter.gui import werkzeuge
 
     bereiche = dict(werkzeuge.nach_bereich())
-    assert [w.name for w in bereiche["Bilder"]] == ["umwandeln", "bearbeiten", "hintergrund"]
+    assert [w.name for w in bereiche["Bilder"]][:3] == ["umwandeln", "bearbeiten", "hintergrund"]
+    assert {"zuschneiden", "wasserzeichen", "umbenennen", "animation", "iconset"} <= {
+        w.name for w in bereiche["Bilder"]
+    }
     assert werkzeuge.datei_art(tmp_path) == werkzeuge.ORDNER
     assert werkzeuge.datei_art("foto.HEIC") == werkzeuge.BILD
     assert werkzeuge.datei_art("dok.pdf") == werkzeuge.PDF
@@ -207,7 +210,8 @@ def test_werkzeuge_nach_bereich_und_art(tmp_path: Path):
     passende = dict(
         (w.name, n) for w, n in werkzeuge.passende_werkzeuge(["a.png", "b.jpg", "c.txt"])
     )
-    assert passende == {"umwandeln": 2, "bearbeiten": 2, "hintergrund": 2, "bilder_pdf": 2}
+    assert passende["umwandeln"] == 2 and passende["bilder_pdf"] == 2
+    assert passende["wasserzeichen"] == 2 and "pdf_teilen" not in passende
     pdf_werkzeuge = {w.name for w, _ in werkzeuge.passende_werkzeuge(["a.pdf"])}
     assert pdf_werkzeuge == {
         "pdf_zusammenfuegen",

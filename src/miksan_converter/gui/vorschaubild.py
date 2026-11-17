@@ -274,3 +274,39 @@ def vorschau_hintergrund(
         groesse_nachher=round(len(daten) * verhaeltnis),
         format=ziel.name,
     )
+
+
+# --- Weitere Bild-Werkzeuge: beliebige Bildfunktion in der Vorschau -----------------------
+
+
+def vorschau_mit_funktion(
+    pfad: str | Path, funktion, *, ziel: str | None = None, kante: int = KANTE
+) -> Vorschau:
+    """Wendet ``funktion`` (Bild -> Bild) auf eine verkleinerte Kopie an (z. B. Wasserzeichen).
+
+    Die Funktion muss mit relativen Grössen arbeiten, damit das Ergebnis maßstabsgetreu ist.
+    """
+    pfad = Path(pfad)
+    quelle = laden(pfad)
+    frame = quelle.frames[0]
+    faktor = min(1.0, kante / max(frame.size))
+    klein = frame
+    if faktor < 1.0:
+        groesse = (max(1, round(frame.width * faktor)), max(1, round(frame.height * faktor)))
+        klein = _fuer_bearbeitung(frame).resize(groesse, Image.Resampling.LANCZOS)
+    ergebnis = funktion(klein)
+    original = logik.Einstellungen(aktion=logik.BEARBEITEN, ziel_format="")
+    fmt = format_aus_name(ziel) if ziel else ziel_format_fuer(pfad, original)
+    bild = dataclasses.replace(quelle, frames=[ergebnis], dauern=[0], ico_bilder=[])
+    daten = kodieren(bild, fmt)
+    verhaeltnis = (frame.width * frame.height) / max(1, klein.width * klein.height)
+    nachher = (round(ergebnis.width / faktor), round(ergebnis.height / faktor))
+    return Vorschau(
+        vorher=klein.convert("RGBA"),
+        nachher=_lesen(daten, ergebnis),
+        masse_vorher=frame.size,
+        masse_nachher=nachher,
+        groesse_vorher=pfad.stat().st_size,
+        groesse_nachher=round(len(daten) * verhaeltnis),
+        format=fmt.name,
+    )

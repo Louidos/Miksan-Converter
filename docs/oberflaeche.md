@@ -44,7 +44,10 @@ Links steht die **Seitenleiste** mit allen Werkzeugen, gegliedert in Bereiche:
 - **Start** – Karten für alle Werkzeuge und eine grosse Ablagefläche „Dateien hierher ziehen“.
   Nach dem Ablegen bietet die Startseite die Werkzeuge an, die zu den Dateien passen
   (z. B. bei Fotos: Umwandeln, Verkleinern & Bearbeiten, Hintergrund entfernen).
-- **Bilder** – Umwandeln, Verkleinern & Bearbeiten, Hintergrund entfernen.
+- **Bilder** – Umwandeln, Verkleinern & Bearbeiten, Hintergrund entfernen, Zuschneiden,
+  Wasserzeichen, Stapel-Umbenennen, Animation, Icon-Set (siehe [werkzeuge.md](werkzeuge.md)).
+- **PDF** – zusammenfügen, teilen, Seiten drehen & löschen, PDF → Bilder, Bilder → PDF,
+  verkleinern (siehe [pdf.md](pdf.md)).
 - unten **Einstellungen** und **Info**.
 
 Werkzeuge, für die ein Extra fehlt (z. B. „Hintergrund entfernen“ ohne `[ki]`), sind

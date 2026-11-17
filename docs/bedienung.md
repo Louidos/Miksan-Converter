@@ -41,6 +41,12 @@ selben Format. Details in [bearbeiten.md](bearbeiten.md).
 
 Alias `miksan bg`, braucht das Extra `[ki]`. Details in [hintergrund.md](hintergrund.md).
 
+## Weitere Bild-Werkzeuge
+
+`miksan wasserzeichen` (`watermark`), `miksan umbenennen` (`rename`), `miksan animation
+erstellen|zerlegen`, `miksan iconset` (`icons`), `miksan zuschneiden` (`crop`). Details in
+[werkzeuge.md](werkzeuge.md).
+
 ## `miksan pdf` – PDF-Werkzeuge
 
 Braucht das Extra `[pdf]`: `zusammenfuegen`, `teilen`, `drehen`, `loeschen`, `bilder`,
