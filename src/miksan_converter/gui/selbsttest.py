@@ -25,6 +25,7 @@ MODULE = (
     "PySide6.QtSvg",
     "pypdf",
     "pypdfium2",
+    "imageio_ffmpeg",
 )
 
 
@@ -57,6 +58,22 @@ def _design_pruefen(zeilen: list[str]) -> bool:
     if fehlend:
         text += f", fehlerhaft: {', '.join(fehlend)}"
     zeilen.append(f"{'ok' if ok else 'FEHLER':<8}{text}")
+    return ok
+
+
+def _ffmpeg_pruefen(zeilen: list[str]) -> bool:
+    """Im Windows-Installer muss ffmpeg mitgeliefert sein und starten."""
+    if not getattr(sys, "frozen", False):
+        return True
+    from .. import medien
+
+    try:
+        version = medien.version()
+    except Exception as fehler:  # nicht gefunden oder startet nicht
+        version, ok = repr(fehler), False
+    else:
+        ok = version.startswith("ffmpeg version")
+    zeilen.append(f"{'ok' if ok else 'FEHLER':<8}ffmpeg: {version}")
     return ok
 
 
@@ -110,6 +127,7 @@ def selbsttest(bericht: Path | None = None) -> int:
     zeilen = [f"Miksan-Converter {__version__} – Selbsttest", f"Python {sys.version.split()[0]}"]
     ok = _module_pruefen(zeilen)
     ok = _modell_pruefen(zeilen) and ok
+    ok = _ffmpeg_pruefen(zeilen) and ok
     try:
         ok = _design_pruefen(zeilen) and ok
     except Exception:

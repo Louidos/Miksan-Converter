@@ -8,6 +8,7 @@
 - [Bearbeiten](bearbeiten.md) – Grösse, Zuschnitt, Drehen, Qualität, Zielgrösse, Metadaten
 - [Ordner und mehrere Dateien](ordner.md) – Muster, rekursiv, parallel, Zusammenfassung
 - [Weitere Bild-Werkzeuge](werkzeuge.md) – Wasserzeichen, Umbenennen, Animation, Icon-Set, Zuschneiden
+- [Video und Audio](video-audio.md) – umwandeln, kürzen, verkleinern, GIF, Ton, ffmpeg-Lizenz
 - [PDF-Werkzeuge](pdf.md) – zusammenfügen, teilen, Seiten drehen/löschen, PDF ↔ Bilder, verkleinern
 
 Für Entwickler: [Windows-Installer bauen](../packaging/windows/README.md)

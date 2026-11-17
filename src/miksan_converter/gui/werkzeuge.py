@@ -57,12 +57,21 @@ class Werkzeug:
     extra_zweck: str = ""
 
     def verfuegbar(self) -> bool:
+        if self.extra == "medien":  # ffmpeg kann auch ohne Extra im PATH liegen
+            from ..medien import ffmpeg_vorhanden
+
+            return ffmpeg_vorhanden()
         return self.extra is None or extra_installiert(self.extra)
 
     def hinweis(self) -> str:
         """Warum das Werkzeug nicht verfügbar ist (leer, wenn es verfügbar ist)."""
         if self.verfuegbar():
             return ""
+        if self.extra == "medien":
+            return (
+                'Video & Audio braucht ffmpeg: pip install "miksan-converter[medien]" '
+                "oder ffmpeg installieren (bzw. in den Einstellungen den Pfad angeben)."
+            )
         zweck = self.extra_zweck or self.titel
         befehl = f'pip install "miksan-converter[{self.extra}]"'
         return f"{zweck} braucht das Extra [{self.extra}]: {befehl}"
@@ -198,6 +207,76 @@ WERKZEUGE: list[Werkzeug] = [
                 "Eingebettete Bilder neu komprimieren, damit das PDF kleiner wird.",
                 "VerkleinernSeite",
                 frozenset({PDF}),
+            ),
+        )
+    ),
+    *(
+        Werkzeug(
+            name,
+            titel,
+            icon,
+            "Video & Audio",
+            text,
+            f"medien:{klasse}",
+            arten=frozenset({art}),
+            extra="medien",
+        )
+        for name, titel, icon, text, klasse, art in (
+            (
+                "video_umwandeln",
+                "Video umwandeln",
+                "video",
+                "In MP4, WebM, MKV, MOV oder GIF – mit Qualität, Auflösung und Bildrate.",
+                "VideoUmwandelnSeite",
+                VIDEO,
+            ),
+            (
+                "video_kuerzen",
+                "Video kürzen",
+                "zuschneiden",
+                "Anfang und Ende abschneiden, wenn möglich ohne Neukodierung.",
+                "KuerzenSeite",
+                VIDEO,
+            ),
+            (
+                "video_verkleinern",
+                "Video verkleinern",
+                "verkleinern",
+                "Auf eine Zielgrösse bringen, z. B. unter 10 MB für Discord oder Mail.",
+                "VerkleinernSeite",
+                VIDEO,
+            ),
+            (
+                "video_gif",
+                "Video → GIF",
+                "animation",
+                "Einen Ausschnitt als GIF mit schöner Farbpalette speichern.",
+                "GifSeite",
+                VIDEO,
+            ),
+            (
+                "video_ton",
+                "Ton herausziehen",
+                "audio",
+                "Den Ton eines Videos als MP3, M4A, FLAC … speichern.",
+                "TonSeite",
+                VIDEO,
+            ),
+            (
+                "video_bild",
+                "Einzelbild speichern",
+                "bild",
+                "Ein Bild aus dem Video zu einem Zeitpunkt als PNG oder JPEG speichern.",
+                "EinzelbildSeite",
+                VIDEO,
+            ),
+            (
+                "audio_umwandeln",
+                "Audio umwandeln",
+                "audio",
+                "MP3, WAV, FLAC, OGG, Opus, M4A – kürzen, Lautstärke angleichen.",
+                "AudioSeite",
+                AUDIO,
             ),
         )
     ),

@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ... import __version__
+from ... import __version__, medien
 from ...hintergrund import modell_ordner
 from .. import design
 from ..werkzeuge import Werkzeug
@@ -37,6 +37,8 @@ BIBLIOTHEKEN = [
     ("PySide6 / Qt", "Oberfläche (Extra [gui])", "LGPL-3.0"),
     ("pypdf", "PDF bearbeiten (Extra [pdf])", "BSD-3-Clause"),
     ("pypdfium2", "PDF-Seiten rendern (Extra [pdf])", "Apache-2.0 / BSD-3-Clause"),
+    ("imageio-ffmpeg", "ffmpeg mitliefern (Extra [medien])", "BSD-2-Clause"),
+    ("FFmpeg", "Video und Ton (eigenes Programm)", "GPL-3.0 (mitgeliefertes Programm)"),
     ("U²-Net (u2netp)", "Modell „klein“ im Windows-Installer", "Apache-2.0"),
 ]
 
@@ -103,6 +105,22 @@ class EinstellungenSeite(QWidget):
         knoepfe.addWidget(self.knopf_loeschen)
         knoepfe.addStretch(1)
         layout.addLayout(knoepfe)
+
+        layout.addWidget(design.eigenschaft(QLabel("Video & Audio (ffmpeg)"), "untertitel"))
+        zeile = QHBoxLayout()
+        self.ffmpeg_pfad = QLineEdit(settings.value("ffmpeg_pfad", "", type=str))
+        self.ffmpeg_pfad.setPlaceholderText("automatisch (PATH oder mitgeliefert)")
+        self.ffmpeg_pfad.setClearButtonEnabled(True)
+        self.ffmpeg_pfad.editingFinished.connect(self._ffmpeg_speichern)
+        zeile.addWidget(self.ffmpeg_pfad, 1)
+        ffmpeg_waehlen = QPushButton(design.icon("datei", design.AKZENT), "Wählen …")
+        ffmpeg_waehlen.clicked.connect(self._ffmpeg_waehlen)
+        zeile.addWidget(ffmpeg_waehlen)
+        layout.addLayout(zeile)
+        self.ffmpeg_info = design.eigenschaft(QLabel(), "hinweis")
+        self.ffmpeg_info.setWordWrap(True)
+        self.ffmpeg_info.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        layout.addWidget(self.ffmpeg_info)
         layout.addStretch(1)
         self._modelle_anzeigen()
 
@@ -111,6 +129,32 @@ class EinstellungenSeite(QWidget):
         self.settings.setValue("ueberschreiben", self.ueberschreiben.isChecked())
         self.settings.setValue("rekursiv", self.rekursiv.isChecked())
         self.settings.sync()
+
+    def _ffmpeg_speichern(self) -> None:
+        self.settings.setValue("ffmpeg_pfad", self.ffmpeg_pfad.text().strip())
+        self.settings.sync()
+        medien.pfad_setzen(self.ffmpeg_pfad.text())
+        self._ffmpeg_anzeigen()
+
+    def _ffmpeg_waehlen(self) -> None:
+        datei, _ = QFileDialog.getOpenFileName(self, "ffmpeg-Programm wählen")
+        if datei:
+            self.ffmpeg_pfad.setText(datei)
+            self._ffmpeg_speichern()
+
+    def _ffmpeg_anzeigen(self) -> None:
+        pfad = medien.ffmpeg_finden()
+        if pfad is None:
+            self.ffmpeg_info.setText(
+                'Kein ffmpeg gefunden. pip install "miksan-converter[medien]" oder ffmpeg '
+                "installieren. Nach einer Änderung die App neu starten."
+            )
+            return
+        try:
+            version = medien.version()
+        except Exception:  # Programm lässt sich nicht starten
+            version = "lässt sich nicht starten"
+        self.ffmpeg_info.setText(f"Genutzt: {pfad}\n{version}")
 
     def _ordner_waehlen(self) -> None:
         ordner = QFileDialog.getExistingDirectory(self, "Standard-Ausgabeordner", "")
@@ -131,6 +175,7 @@ class EinstellungenSeite(QWidget):
 
     def showEvent(self, event) -> None:  # noqa: N802 – Qt-Name
         self._modelle_anzeigen()
+        self._ffmpeg_anzeigen()
         super().showEvent(event)
 
     def _modelle_oeffnen(self) -> None:
@@ -166,7 +211,7 @@ class InfoSeite(QWidget):
             f"<p><b>Version {__version__}</b> · Lizenz MIT</p>"
             "<p>Alles läuft lokal auf diesem Rechner: <b>ohne Cloud, ohne Werbung, ohne "
             "Telemetrie, ohne Konto</b>. Nur KI-Modelle werden nach Bestätigung einmalig "
-            "heruntergeladen.</p>"
+            "heruntergeladen. Video und Ton verarbeitet das Programm ffmpeg, ebenfalls lokal.</p>"
             f'<p>Quellcode, Fehler melden und neue Versionen: <a href="{REPO}">{REPO}</a></p>'
         )
         text.setWordWrap(True)

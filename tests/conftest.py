@@ -43,3 +43,14 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "slow" in item.keywords:
             item.add_marker(ueberspringen)
+
+
+@pytest.fixture(scope="session")
+def clips(tmp_path_factory) -> dict[str, Path]:
+    """Kurze Test-Clips; ohne ffmpeg werden die Tests übersprungen."""
+    from miksan_converter.medien import ffmpeg_finden
+
+    programm = ffmpeg_finden()
+    if programm is None:
+        pytest.skip("kein ffmpeg vorhanden (Extra [medien] oder ffmpeg im PATH)")
+    return testbilder_erzeugen.clips_erzeugen(tmp_path_factory.mktemp("clips"), programm)

@@ -52,6 +52,9 @@ class DateiZeile(QWidget):
         symbol = "ordner" if Path(pfad).is_dir() else "bild"
         if Path(pfad).suffix.lower() == ".pdf":
             symbol = "pdf"
+        from ..werkzeuge import AUDIO, VIDEO, datei_art
+
+        symbol = {VIDEO: "video", AUDIO: "audio"}.get(datei_art(pfad), symbol)
         self.bild.setPixmap(design.icon(symbol, design.NEBENTEXT).pixmap(28, 28))
         layout.addWidget(self.bild)
 

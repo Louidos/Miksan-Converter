@@ -52,6 +52,11 @@ erstellen|zerlegen`, `miksan iconset` (`icons`), `miksan zuschneiden` (`crop`). 
 Braucht das Extra `[pdf]`: `zusammenfuegen`, `teilen`, `drehen`, `loeschen`, `bilder`,
 `aus-bildern`, `verkleinern`. Details in [pdf.md](pdf.md).
 
+## `miksan video` und `miksan audio` – Video und Ton
+
+Brauchen ffmpeg (Extra `[medien]` oder ffmpeg im PATH): `miksan video umwandeln|kuerzen|
+verkleinern|gif|ton|bild` und `miksan audio`. Details in [video-audio.md](video-audio.md).
+
 ## `miksan gui` – grafische Oberfläche
 
 Alias `miksan oberflaeche`, braucht das Extra `[gui]`. Öffnet dasselbe Fenster wie `miksan-gui`.

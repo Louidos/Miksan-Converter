@@ -68,6 +68,8 @@ Name: "pfad"; Description: "{cm:PfadAufgabe}"; GroupDescription: "{cm:Zusatz}"; 
 
 [Files]
 Source: "{#Quelle}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Lizenztexte mitgelieferter Programme und Modelle (ffmpeg: GPL-3.0, Modell u2netp: Apache-2.0)
+Source: "lizenzen\*"; DestDir: "{app}\lizenzen"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"

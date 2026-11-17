@@ -38,7 +38,7 @@ jobs:
           }
 
       - name: Abhängigkeiten installieren
-        run: uv sync --locked --no-dev --extra gui --extra svg --extra raw --extra ki --extra pdf --group installer
+        run: uv sync --locked --no-dev --extra gui --extra svg --extra raw --extra ki --extra pdf --extra medien --group installer
 
       - name: Inno Setup installieren
         run: choco install innosetup --yes --no-progress
@@ -109,6 +109,24 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "PDF -> Bilder fehlgeschlagen" }
           $anzahl = (Get-ChildItem "$test\bilder\*.png").Count
           if ($anzahl -ne 2) { throw "Erwartet 2 Bilder, gefunden $anzahl" }
+
+      - name: "Rauchtest: Video und Audio (mitgeliefertes ffmpeg)"
+        run: |
+          $miksan = "$env:APP\miksan.exe"
+          $ffmpeg = Get-ChildItem "$env:APP\_internal\imageio_ffmpeg\binaries\ffmpeg*.exe" | Select-Object -First 1
+          if (-not $ffmpeg) { throw "ffmpeg fehlt im Programmordner" }
+          & $ffmpeg.FullName -hide_banner -version | Select-Object -First 3
+          foreach ($datei in 'FFMPEG.txt', 'FFMPEG-COPYING.GPLv3.txt') {
+            if (-not (Test-Path "$env:APP\lizenzen\$datei")) { throw "$datei fehlt im Programmordner" }
+          }
+          $test = "$env:RUNNER_TEMP\rauchtest-medien"
+          New-Item -ItemType Directory -Force $test | Out-Null
+          & $ffmpeg.FullName -hide_banner -loglevel error -y -f lavfi -i testsrc=size=320x240:rate=25:duration=2 -f lavfi -i sine=duration=2 -c:v mpeg4 -c:a pcm_s16le -shortest "$test\clip.mov"
+          & $miksan video umwandeln "$test\clip.mov" -o "$test\clip.mp4"
+          if ($LASTEXITCODE -ne 0) { throw "MOV -> MP4 fehlgeschlagen" }
+          & $miksan video ton "$test\clip.mov" -o "$test\ton.mp3"
+          if ($LASTEXITCODE -ne 0) { throw "Video -> MP3 fehlgeschlagen" }
+          foreach ($datei in 'clip.mp4', 'ton.mp3') { if (-not (Test-Path "$test\$datei")) { throw "$datei fehlt" } }
 
       - name: "Rauchtest: Oberfläche (Selbsttest)"
         run: |

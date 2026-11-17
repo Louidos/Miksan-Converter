@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .. import __version__
+from .. import __version__, medien
 from . import design
 from .seiten.basis import WerkzeugSeite
 from .seiten.einstellungen import EinstellungenSeite, InfoSeite, NichtVerfuegbarSeite
@@ -66,6 +66,7 @@ class Hauptfenster(QMainWindow):
     def __init__(self, einstellungen: QSettings | None = None) -> None:
         super().__init__()
         self.settings = einstellungen or QSettings("Miksan", "Miksan-Converter")
+        medien.pfad_setzen(self.settings.value("ffmpeg_pfad", "", type=str))
         self.lader = MiniaturLader(self)
         self.seiten: dict[str, QWidget] = {}
         self._aktuell = START
