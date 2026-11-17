@@ -86,11 +86,23 @@ class Einzelinstanz(QObject):
         if self._puffer[verbindung].endswith(b"\n") or ende:
             self._fertig(verbindung)
 
+    @staticmethod
+    def _loesen(verbindung: QLocalSocket) -> None:
+        """Eigene Signal-Verbindungen trennen, bevor Qt die Verbindung freigibt (sonst ruft
+        ``disconnected`` während des Aufräumens noch unseren Code auf)."""
+        for signal in (verbindung.readyRead, verbindung.disconnected):
+            try:
+                signal.disconnect()
+            except (RuntimeError, TypeError):
+                pass
+
     def _fertig(self, verbindung: QLocalSocket) -> None:
         daten = self._puffer.pop(verbindung, b"")
+        self._loesen(verbindung)
         if verbindung.state() == QLocalSocket.LocalSocketState.ConnectedState:
             verbindung.write(b"ok\n")
             verbindung.flush()
+            verbindung.disconnectFromServer()
         verbindung.deleteLater()
         if not daten.strip():
             return
@@ -101,6 +113,10 @@ class Einzelinstanz(QObject):
         self.dateien.emit([str(p) for p in pfade if isinstance(p, str)])
 
     def schliessen(self) -> None:
+        for verbindung in list(self._puffer):
+            self._loesen(verbindung)
+            verbindung.abort()
+        self._puffer.clear()
         self.server.close()
 
 

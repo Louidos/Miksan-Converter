@@ -50,6 +50,8 @@ def test_zweiter_start_gibt_dateien_weiter(qtbot, fenster, tmp_path: Path):
     assert "umwandeln" in fenster.startseite.knoepfe
     instanz.schliessen()
     assert not einzelfenster.an_laufendes_senden([], name)  # niemand mehr da
+    instanz.deleteLater()
+    qtbot.wait(50)
 
 
 def test_verwaister_server_wird_aufgeraeumt(qtbot):
@@ -57,6 +59,8 @@ def test_verwaister_server_wird_aufgeraeumt(qtbot):
     instanz = einzelfenster.Einzelinstanz(name)
     assert instanz.aufraeumen_und_starten()
     instanz.schliessen()
+    instanz.deleteLater()
+    qtbot.wait(50)
 
 
 def test_fertigmeldung_mit_ordner_oeffnen(qtbot, fenster, tmp_path: Path):
