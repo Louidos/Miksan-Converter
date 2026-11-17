@@ -209,3 +209,51 @@ def test_selbsttest_bericht(qtbot, tmp_path: Path, monkeypatch):
     assert "ok      PIL" in text
     assert "FEHLER  gibt_es_nicht_123" in text
     assert "Ergebnis: FEHLER" in text
+
+
+def test_design_kontrast_und_masse():
+    from miksan_converter.gui import design
+
+    for vorne, hinten in (
+        (design.TEXT, design.HINTERGRUND),
+        (design.TEXT, design.FLAECHE),
+        (design.NEBENTEXT, design.HINTERGRUND),
+        (design.NEBENTEXT, design.FLAECHE),
+        (design.AUF_AKZENT, design.AKZENT),
+        (design.AKZENT, design.HINTERGRUND),
+        (design.FEHLER, design.HINTERGRUND),
+        (design.ERFOLG, design.HINTERGRUND),
+    ):
+        assert design.kontrast(vorne, hinten) >= 4.5, (vorne, hinten)
+    assert design.RADIUS == 8 and design.abstand(2) == 16
+
+
+def test_design_angewendet(qtbot):
+    from PySide6.QtWidgets import QApplication
+
+    from miksan_converter.gui import design
+
+    app = QApplication.instance()
+    design.anwenden(app)
+    try:
+        assert app.property("miksan_design")
+        assert app.palette().window().color().name().upper() == design.HINTERGRUND
+        assert design.AKZENT in app.styleSheet()
+        assert len(design.icon_namen()) >= 20
+        for name in design.icon_namen():
+            assert not design.icon(name).pixmap(24, 24).isNull(), name
+    finally:
+        app.setStyleSheet("")
+
+
+def test_keine_verstreuten_farben():
+    """Farben stehen nur in gui/design.py, nicht als setStyleSheet in anderen Dateien."""
+    from miksan_converter import gui
+
+    ordner = Path(gui.__file__).parent
+    for datei in ordner.rglob("*.py"):
+        if datei.name == "design.py":
+            continue
+        text = datei.read_text(encoding="utf-8")
+        assert "setStyleSheet(" not in text, datei
+        assert "color:" not in text, datei

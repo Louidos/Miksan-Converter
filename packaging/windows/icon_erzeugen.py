@@ -15,10 +15,12 @@ PNG = ORDNER.parent.parent / "src" / "miksan_converter" / "gui" / "miksan.png"
 GROESSEN = (16, 20, 24, 32, 40, 48, 64, 128, 256)
 S = 1024  # gezeichnet wird gross, danach verkleinert
 
-OBEN = (37, 99, 235)  # Blau
-UNTEN = (13, 148, 136)  # Petrol
+# Farben wie in src/miksan_converter/gui/design.py (Blau-Weiss)
+OBEN = (30, 111, 224)  # Akzent-Blau #1E6FE0
+UNTEN = (19, 74, 158)  # dunkles Blau #134A9E
 WEISS = (255, 255, 255, 255)
-SONNE = (251, 191, 36, 255)
+SONNE = (141, 184, 242, 255)  # helles Blau
+BERG = (30, 111, 224, 255)
 
 
 def _verlauf() -> Image.Image:
@@ -43,7 +45,7 @@ def zeichnen() -> Image.Image:
     # vorderes Bild mit Berg und Sonne
     d.rounded_rectangle([184, 400, 724, 820], radius=60, fill=WEISS)
     d.ellipse([560, 460, 660, 560], fill=SONNE)
-    d.polygon([(220, 790), (400, 560), (520, 700), (590, 630), (690, 790)], fill=(*UNTEN, 255))
+    d.polygon([(220, 790), (400, 560), (520, 700), (590, 630), (690, 790)], fill=BERG)
     # Pfeil: umwandeln
     d.line([(150, 330), (250, 230)], fill=WEISS, width=46)
     d.polygon([(290, 190), (160, 215), (265, 320)], fill=WEISS)

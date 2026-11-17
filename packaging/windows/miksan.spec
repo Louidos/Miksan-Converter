@@ -33,9 +33,10 @@ for paket in ("miksan_converter", "pillow_heif", "pymatting"):
 versteckt += collect_submodules(
     "rembg", filter=lambda name: not name.startswith(("rembg.cli", "rembg.commands"))
 )
-versteckt += ["resvg_py", "rawpy", "rawpy._rawpy", "onnxruntime"]
+versteckt += ["resvg_py", "rawpy", "rawpy._rawpy", "onnxruntime", "PySide6.QtSvg"]
 
-daten = collect_data_files("miksan_converter", includes=["**/*.png"])
+# Programm-Icon und Linien-Icons (SVG) der Oberfläche
+daten = collect_data_files("miksan_converter", includes=["**/*.png", "**/*.svg"])
 daten += collect_data_files("rembg")
 # Pakete, die zur Laufzeit ihre eigene Version über importlib.metadata abfragen
 for paket in ("rembg", "pymatting", "pooch", "onnxruntime", "pillow_heif", "numba", "llvmlite"):
