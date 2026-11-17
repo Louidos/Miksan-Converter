@@ -36,8 +36,15 @@ def test_zweiter_start_gibt_dateien_weiter(qtbot, fenster, tmp_path: Path):
     Image.new("RGB", (10, 10)).save(tmp_path / "a.png")
     fenster.seite_zeigen("einstellungen")
 
-    assert einzelfenster.an_laufendes_senden([str(tmp_path / "a.png")], name)
-    qtbot.waitUntil(lambda: bool(nach_vorne), timeout=5_000)
+    # wie ein zweiter Programmstart: eigener Prozess
+    skript = (
+        "import sys; from PySide6.QtCore import QCoreApplication; app = QCoreApplication([]); "
+        "from miksan_converter.gui import einzelfenster; "
+        "sys.exit(0 if einzelfenster.an_laufendes_senden([sys.argv[1]], sys.argv[2]) else 1)"
+    )
+    zweiter = subprocess.Popen([sys.executable, "-c", skript, str(tmp_path / "a.png"), name])
+    qtbot.waitUntil(lambda: bool(nach_vorne), timeout=20_000)
+    assert zweiter.wait(20) == 0
     assert fenster.aktuelle_seite() is fenster.startseite
     assert fenster.startseite.abgelegte == [str(tmp_path / "a.png")]
     assert "umwandeln" in fenster.startseite.knoepfe

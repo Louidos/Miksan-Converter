@@ -36,6 +36,9 @@ def an_laufendes_senden(pfade: list[str], name: str | None = None) -> bool:
     verbindung.write(json.dumps({"pfade": pfade}).encode("utf-8") + b"\n")
     verbindung.flush()
     verbindung.waitForBytesWritten(WARTEN_MS)
+    # Erst trennen, wenn das Fenster „ok“ gesagt hat – sonst gehen unter Windows (Named
+    # Pipes) die Daten verloren, wenn das Fenster noch nicht gelesen hat.
+    verbindung.waitForReadyRead(WARTEN_MS * 2)
     verbindung.disconnectFromServer()
     if verbindung.state() != QLocalSocket.LocalSocketState.UnconnectedState:
         verbindung.waitForDisconnected(WARTEN_MS)
@@ -85,6 +88,9 @@ class Einzelinstanz(QObject):
 
     def _fertig(self, verbindung: QLocalSocket) -> None:
         daten = self._puffer.pop(verbindung, b"")
+        if verbindung.state() == QLocalSocket.LocalSocketState.ConnectedState:
+            verbindung.write(b"ok\n")
+            verbindung.flush()
         verbindung.deleteLater()
         if not daten.strip():
             return
