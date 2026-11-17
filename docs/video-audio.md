@@ -84,7 +84,7 @@ Der Code von Miksan-Converter bleibt MIT. ffmpeg ist ein eigenes Programm mit ei
 | Teil | Lizenz |
 |---|---|
 | [imageio-ffmpeg](https://github.com/imageio/imageio-ffmpeg) (Extra `[medien]`) | BSD-2-Clause |
-| mitgeliefertes ffmpeg-Programm (aus imageio-ffmpeg, im Windows-Installer) | **GPL-3.0** – übersetzt mit `--enable-gpl --enable-version3` (u. a. x264) |
+| mitgeliefertes ffmpeg-Programm (aus imageio-ffmpeg; Windows: „essentials“-Build von gyan.dev, Linux: Build von BtbN) | **GPL-3.0** – übersetzt mit `--enable-gpl --enable-version3` (u. a. x264) |
 | eigenes ffmpeg (PATH oder Einstellungen) | je nach Build LGPL oder GPL |
 
 Weil das mitgelieferte ffmpeg nur als getrenntes Programm aufgerufen wird, bleibt
