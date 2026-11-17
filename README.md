@@ -23,6 +23,9 @@ Aktuelle Version: **0.2.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
   Seitenleiste und einer Seite pro Werkzeug: Bilder und Ordner per Drag & Drop umwandeln,
   bearbeiten und freistellen, mit Fortschritt, Abbrechen und Zusammenfassung, siehe
   [docs/oberflaeche.md](docs/oberflaeche.md)
+- Weitere Bild-Werkzeuge: Wasserzeichen, Stapel-Umbenennen, Animation erstellen/zerlegen,
+  Icon-Set (favicon), Zuschneiden mit festen Verhältnissen und Zielmassen – in Oberfläche und
+  Kommandozeile, siehe [docs/werkzeuge.md](docs/werkzeuge.md)
 - PDF-Werkzeuge (`miksan pdf`; optional): zusammenfügen, teilen, Seiten drehen und löschen,
   PDF → Bilder, Bilder → PDF, verkleinern – auch in der Oberfläche, siehe [docs/pdf.md](docs/pdf.md)
 - Windows-Installer (`MiksanConverter-Setup-X.Y.Z.exe`) ohne Python, siehe
@@ -82,6 +85,9 @@ miksan bearbeiten foto.jpg --zielgroesse 300KB --metadaten-entfernen
 miksan bg portrait.jpg portrait.png   # Hintergrund entfernen (Extra [ki])
 miksan convert fotos/ --to jpg -o fertig/        # ganzer Ordner
 miksan bg fotos/ -o freigestellt/ --rekursiv
+miksan wasserzeichen foto.jpg --text "© 2026"         # weitere Bild-Werkzeuge
+miksan umbenennen fotos/ --muster "urlaub-{datum}-{nr}"
+miksan zuschneiden foto.jpg --vorlage profilbild
 miksan pdf zusammenfuegen a.pdf b.pdf -o gesamt.pdf   # PDF-Werkzeuge (Extra [pdf])
 miksan formats                        # alle unterstützten Formate
 ```
