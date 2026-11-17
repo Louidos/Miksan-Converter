@@ -1,3 +1,4 @@
+import gc
 import importlib.util
 import os
 from pathlib import Path
@@ -54,3 +55,11 @@ def clips(tmp_path_factory) -> dict[str, Path]:
     if programm is None:
         pytest.skip("kein ffmpeg vorhanden (Extra [medien] oder ffmpeg im PATH)")
     return testbilder_erzeugen.clips_erzeugen(tmp_path_factory.mktemp("clips"), programm)
+
+
+@pytest.fixture(autouse=True)
+def _aufraeumen_im_hauptthread():
+    """Qt-Objekte aus Referenzzyklen im Haupt-Thread freigeben (nicht zufällig in einem
+    Arbeits-Thread – das führt unter Windows zu Zugriffsverletzungen)."""
+    yield
+    gc.collect()
