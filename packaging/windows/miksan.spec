@@ -29,7 +29,7 @@ VERSION = str(VERSION_INFO) if sys.platform == "win32" and VERSION_INFO.is_file(
 
 # Pakete, die PyInstaller nicht vollständig von selbst findet
 versteckt = []
-for paket in ("miksan_converter", "pillow_heif", "pymatting", "pypdf", "pypdfium2"):
+for paket in ("miksan_converter", "pillow_heif", "pymatting", "pypdf", "pypdfium2", "imageio_ffmpeg"):
     versteckt += collect_submodules(paket)
 # rembg ohne eigene Kommandozeile (bräuchte click und weitere Pakete)
 versteckt += collect_submodules(
@@ -42,6 +42,8 @@ versteckt += collect_submodules("pypdfium2_raw") + collect_submodules("pypdfium2
 daten = collect_data_files("miksan_converter", includes=["**/*.png", "**/*.svg"])
 daten += collect_data_files("rembg")
 daten += collect_data_files("pypdfium2") + collect_data_files("pypdfium2_raw")
+# ffmpeg-Programm aus imageio-ffmpeg (Extra [medien]); wird getrennt gestartet (GPL-3.0)
+daten += collect_data_files("imageio_ffmpeg", includes=["binaries/*"])
 # Mitgeliefertes Modell "klein" samt Lizenztexten (von bauen.py vorbereitet)
 MODELLE = REPO / "build" / "modelle"
 if (MODELLE / "u2netp.onnx").is_file():
@@ -57,6 +59,7 @@ for paket in (
     "llvmlite",
     "pypdf",
     "pypdfium2",
+    "imageio_ffmpeg",
 ):
     daten += copy_metadata(paket)
 

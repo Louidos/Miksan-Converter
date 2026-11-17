@@ -289,11 +289,13 @@ def _parser() -> argparse.ArgumentParser:
     )
     hintergrund.set_defaults(ausfuehren=_befehl_hintergrund)
 
+    from .cli_medien import befehle_anlegen as medien_befehle
     from .cli_pdf import befehle_anlegen as pdf_befehle
     from .cli_werkzeuge import befehle_anlegen as werkzeug_befehle
 
     pdf_befehle(befehle)
     werkzeug_befehle(befehle)
+    medien_befehle(befehle)
 
     gui = befehle.add_parser(
         "gui",

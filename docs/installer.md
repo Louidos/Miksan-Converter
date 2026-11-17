@@ -38,6 +38,15 @@ Die grösseren Modelle („genau“, „person“, „sehr genau“) sind nicht 
 wäre sonst viel grösser). Sie werden im Programm auf der Seite „Hintergrund entfernen“ über den
 Knopf **Herunterladen** einmalig geladen und danach offline genutzt.
 
+## Video und Audio
+
+Der Installer enthält das Programm **ffmpeg** (aus `imageio-ffmpeg`), damit Video und Audio
+sofort funktionieren. Dieses ffmpeg steht unter der **GPL-3.0**; Lizenztext und Hinweise zum
+Quelltext liegen im Programmordner unter `lizenzen\` (`FFMPEG.txt`,
+`FFMPEG-COPYING.GPLv3.txt`). Miksan-Converter startet ffmpeg nur als eigenes Programm, der
+eigene Code bleibt MIT. Ein anderes ffmpeg lässt sich unter Einstellungen → Video & Audio
+angeben. Details in [video-audio.md](video-audio.md).
+
 ## Aktualisieren
 
 Einfach den neuen Installer ausführen; er ersetzt die vorhandene Installation. Einstellungen und

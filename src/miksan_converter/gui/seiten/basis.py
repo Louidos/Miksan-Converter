@@ -7,6 +7,7 @@ Optionen und liefern mit ``vorbereiten()`` die Aufgabe für den Hintergrund-Thre
 
 from __future__ import annotations
 
+import gc
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, Qt, QThread, Signal
@@ -332,6 +333,9 @@ class WerkzeugSeite(QWidget):
         self.ablauf.fortschritt.setRange(0, 0)  # unbestimmt, bis die erste Datei fertig ist
         self.ablauf.status.setText(text)
 
+        # Alte Qt-Objekte jetzt im Fenster-Thread aufräumen: räumt die Garbage Collection sie
+        # später in einem Arbeits-Thread weg, stürzt Qt (vor allem unter Windows) ab.
+        gc.collect()
         self._thread = QThread(self)
         self._arbeiter = Arbeiter(aufgabe)
         self._arbeiter.moveToThread(self._thread)

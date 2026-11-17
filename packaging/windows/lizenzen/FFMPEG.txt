@@ -1,0 +1,26 @@
+Mitgeliefertes Programm FFmpeg
+==============================
+
+Miksan-Converter nutzt für Video und Ton das Programm FFmpeg. Es wird als eigenes,
+getrenntes Programm gestartet (nicht in Miksan-Converter eingebunden). Der Code von
+Miksan-Converter steht weiterhin unter der MIT-Lizenz.
+
+Herkunft:   Python-Paket imageio-ffmpeg (BSD-2-Clause), https://github.com/imageio/imageio-ffmpeg
+            Das Paket enthält ein fertig übersetztes ffmpeg-Programm
+            (Ordner _internal\imageio_ffmpeg\binaries\ im Programmordner).
+Build:      Windows: "essentials"-Build von gyan.dev (https://www.gyan.dev/ffmpeg/builds/),
+            Linux: Build von BtbN (https://github.com/BtbN/FFmpeg-Builds), jeweils über
+            imageio-ffmpeg bzw. imageio-binaries (https://github.com/imageio/imageio-binaries).
+Lizenz:     Das Programm ist mit --enable-gpl --enable-version3 übersetzt (u. a. mit x264)
+            und steht deshalb unter der GNU General Public License Version 3,
+            siehe FFMPEG-COPYING.GPLv3.txt. Version und Übersetzungsoptionen zeigt
+            "ffmpeg -version" bzw. Miksan-Converter unter Einstellungen → Video & Audio.
+Quelltext:  FFmpeg: https://github.com/FFmpeg/FFmpeg (bzw. https://ffmpeg.org/download.html)
+            Quelltext und Build-Angaben der mitgelieferten Programme: https://www.gyan.dev/ffmpeg/builds/
+            (Windows), https://github.com/BtbN/FFmpeg-Builds (Linux),
+            https://github.com/imageio/imageio-binaries
+            Auf Anfrage über https://github.com/Louidos/Miksan-Converter/issues stellen wir den
+            vollständigen Quelltext der mitgelieferten Version zur Verfügung.
+
+Wer kein mitgeliefertes ffmpeg möchte, kann in den Einstellungen ein eigenes ffmpeg angeben
+(z. B. einen LGPL-Build); Miksan-Converter nutzt dann dieses.

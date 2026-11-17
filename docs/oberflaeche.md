@@ -48,6 +48,8 @@ Links steht die **Seitenleiste** mit allen Werkzeugen, gegliedert in Bereiche:
   Wasserzeichen, Stapel-Umbenennen, Animation, Icon-Set (siehe [werkzeuge.md](werkzeuge.md)).
 - **PDF** – zusammenfügen, teilen, Seiten drehen & löschen, PDF → Bilder, Bilder → PDF,
   verkleinern (siehe [pdf.md](pdf.md)).
+- **Video & Audio** – Video umwandeln, kürzen, verkleinern, Video → GIF, Ton herausziehen,
+  Einzelbild speichern, Audio umwandeln (siehe [video-audio.md](video-audio.md)).
 - unten **Einstellungen** und **Info**.
 
 Werkzeuge, für die ein Extra fehlt (z. B. „Hintergrund entfernen“ ohne `[ki]`), sind
@@ -114,7 +116,7 @@ zeigt die Ergebnisse im Dateimanager.
   Standard-Ausgabeordner (leer = neben dem Original; ein Ordner unten auf einer Werkzeug-Seite
   hat Vorrang), vorhandene Dateien überschreiben, Unterordner einbeziehen (die Ordnerstruktur
   bleibt im Ausgabeordner erhalten), Ordner der KI-Modelle mit „Ordner öffnen“ und
-  „Modelle löschen“.
+  „Modelle löschen“, Pfad zu einem eigenen ffmpeg (leer = automatisch).
 - **Info**: Version, Lizenz, genutzte Bibliotheken, Link zum Repo. Miksan-Converter arbeitet
   lokal – ohne Cloud, ohne Werbung, ohne Telemetrie.
 

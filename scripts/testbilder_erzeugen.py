@@ -154,7 +154,53 @@ def erzeugen(ordner: Path) -> dict[str, Path]:
     return dateien
 
 
+def clips_erzeugen(ordner: Path, ffmpeg: str | Path) -> dict[str, Path]:
+    """Sehr kurze Test-Clips (2 Sekunden) für Video und Audio, mit ffmpeg erzeugt.
+
+    ``clip_mov`` und ``clip_mkv`` (Testbild 320x240, 25 fps, Sinuston), ``ton_mp3`` mit Titel,
+    Interpret und Cover, ``ton_wav`` ohne Metadaten, ``stumm_mp4`` ohne Ton.
+    """
+    import subprocess
+
+    ordner = Path(ordner)
+    ordner.mkdir(parents=True, exist_ok=True)
+    video = ["-f", "lavfi", "-i", "testsrc=size=320x240:rate=25:duration=2"]
+    ton = ["-f", "lavfi", "-i", "sine=frequency=440:duration=2"]
+    h264 = ["-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p"]
+    cover = ordner / "cover.png"
+    Image.new("RGB", (64, 64), (30, 111, 224)).save(cover)
+    auftraege = {
+        "clip_mov": (video + ton + h264 + ["-c:a", "aac", "-shortest"], "clip.mov"),
+        "clip_mkv": (video + ton + h264 + ["-c:a", "aac", "-shortest"], "clip.mkv"),
+        "stumm_mp4": (video + h264, "stumm.mp4"),
+        "ton_wav": (ton + ["-c:a", "pcm_s16le"], "ton.wav"),
+        "ton_mp3": (
+            ton
+            + ["-i", str(cover), "-map", "0:a", "-map", "1:v", "-c:a", "libmp3lame"]
+            + ["-c:v", "png", "-disposition:v", "attached_pic", "-id3v2_version", "3"]
+            + ["-metadata", "title=Testlied", "-metadata", "artist=Miksan"],
+            "ton.mp3",
+        ),
+    }
+    dateien = {}
+    for name, (argumente, dateiname) in auftraege.items():
+        ziel = ordner / dateiname
+        befehl = [str(ffmpeg), "-hide_banner", "-loglevel", "error", "-y", *argumente, str(ziel)]
+        subprocess.run(befehl, check=True, capture_output=True)
+        dateien[name] = ziel
+    return dateien
+
+
 if __name__ == "__main__":
     ziel = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("tests/fixtures/erzeugt")
     for name, pfad in erzeugen(ziel).items():
         print(f"{name:15} {pfad}")
+    try:
+        from miksan_converter.medien import ffmpeg_finden
+
+        programm = ffmpeg_finden()
+    except ImportError:
+        programm = None
+    if programm is not None:
+        for name, pfad in clips_erzeugen(ziel, programm).items():
+            print(f"{name:15} {pfad}")

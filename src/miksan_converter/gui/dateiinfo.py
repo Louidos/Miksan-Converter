@@ -22,6 +22,7 @@ class DateiInfo:
     groesse: int | None = None  # Byte
     anzahl: int | None = None  # bei Ordnern: Anzahl Bilder (ohne Unterordner)
     seiten: int | None = None  # bei PDFs
+    dauer: float | None = None  # bei Video und Ton (Sekunden)
     geschuetzt: bool = False  # PDF mit Passwort
 
     def text(self) -> str:
@@ -35,6 +36,10 @@ class DateiInfo:
             teile.append(f"{self.seiten} Seite{'n' if self.seiten != 1 else ''}")
         if self.breite and self.hoehe:
             teile.append(f"{self.breite} × {self.hoehe}")
+        if self.dauer is not None:
+            from ..medien import zeit_text
+
+            teile.append(zeit_text(self.dauer))
         if self.groesse is not None:
             teile.append(groesse_text(self.groesse))
         return " · ".join(teile)
@@ -70,6 +75,8 @@ def datei_info(pfad: str | Path) -> DateiInfo:
         return info
     if pfad.suffix.lower() == ".pdf":
         return _pdf_info(info)
+    if _ist_medien(pfad):
+        return _medien_info(info)
     try:
         with Image.open(pfad) as bild:
             info.breite, info.hoehe = bild.size
@@ -79,6 +86,25 @@ def datei_info(pfad: str | Path) -> DateiInfo:
                 info.breite, info.hoehe = info.hoehe, info.breite
     except Exception:  # SVG, RAW, PDF, Video … : nur Endung und Grösse
         pass
+    return info
+
+
+def _ist_medien(pfad: Path) -> bool:
+    from .werkzeuge import AUDIO_ENDUNGEN, VIDEO_ENDUNGEN
+
+    return pfad.suffix.lower() in VIDEO_ENDUNGEN | AUDIO_ENDUNGEN
+
+
+def _medien_info(info: DateiInfo) -> DateiInfo:
+    try:
+        from .. import medien
+
+        werte = medien.untersuchen(info.pfad)
+    except Exception:  # ohne ffmpeg oder unlesbar: nur Endung und Grösse
+        return info
+    info.dauer = werte.dauer
+    if werte.hat_video:
+        info.breite, info.hoehe = werte.breite, werte.hoehe
     return info
 
 
@@ -118,6 +144,10 @@ def miniatur(pfad: str | Path, kante: int = 96):
         return None
     if pfad.suffix.lower() == ".pdf":
         return _pdf_miniatur(pfad, kante)
+    if _ist_medien(pfad):
+        from .. import medien
+
+        return medien.vorschaubild(pfad, kante)
     try:
         with Image.open(pfad) as offen:
             offen.draft("RGB", (kante * 2, kante * 2))  # JPEG: gleich verkleinert laden

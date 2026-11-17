@@ -102,8 +102,8 @@ def modell_holen() -> Path:
         if not stimmt():
             ziel.unlink(missing_ok=True)
             sys.exit("Prüfsumme des Modells u2netp.onnx stimmt nicht.")
-    for datei in (HIER / "lizenzen").glob("*.txt"):
-        shutil.copyfile(datei, MODELLE / datei.name)
+    for name in ("U-2-Net-LICENSE.txt", "MODELLE.txt"):
+        shutil.copyfile(HIER / "lizenzen" / name, MODELLE / name)
     return ziel
 
 

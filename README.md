@@ -26,6 +26,9 @@ Aktuelle Version: **0.2.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
 - Weitere Bild-Werkzeuge: Wasserzeichen, Stapel-Umbenennen, Animation erstellen/zerlegen,
   Icon-Set (favicon), Zuschneiden mit festen Verhältnissen und Zielmassen – in Oberfläche und
   Kommandozeile, siehe [docs/werkzeuge.md](docs/werkzeuge.md)
+- Video und Audio (`miksan video`, `miksan audio`; ffmpeg, optional): Video in MP4, WebM, MKV,
+  MOV, GIF umwandeln, kürzen, auf Zielgrösse verkleinern, Ton herausziehen, Einzelbild
+  speichern; Ton in MP3, WAV, FLAC, OGG, Opus, M4A – siehe [docs/video-audio.md](docs/video-audio.md)
 - PDF-Werkzeuge (`miksan pdf`; optional): zusammenfügen, teilen, Seiten drehen und löschen,
   PDF → Bilder, Bilder → PDF, verkleinern – auch in der Oberfläche, siehe [docs/pdf.md](docs/pdf.md)
 - Windows-Installer (`MiksanConverter-Setup-X.Y.Z.exe`) ohne Python, siehe
@@ -61,7 +64,8 @@ pip install "miksan-converter[raw]"   # Kamera-RAW als Eingabe
 pip install "miksan-converter[ki]"    # Hintergrund entfernen (lokales KI-Modell)
 pip install "miksan-converter[gui]"   # grafische Oberfläche (miksan-gui)
 pip install "miksan-converter[pdf]"   # PDF-Werkzeuge (miksan pdf)
-pip install "miksan-converter[gui,ki,svg,raw,pdf]"   # alles
+pip install "miksan-converter[medien]"   # Video und Audio (mitgeliefertes ffmpeg)
+pip install "miksan-converter[gui,ki,svg,raw,pdf,medien]"   # alles
 ```
 
 ## Start
@@ -89,6 +93,9 @@ miksan wasserzeichen foto.jpg --text "© 2026"         # weitere Bild-Werkzeuge
 miksan umbenennen fotos/ --muster "urlaub-{datum}-{nr}"
 miksan zuschneiden foto.jpg --vorlage profilbild
 miksan pdf zusammenfuegen a.pdf b.pdf -o gesamt.pdf   # PDF-Werkzeuge (Extra [pdf])
+miksan video umwandeln film.mov       # Video -> MP4 (ffmpeg, Extra [medien])
+miksan video verkleinern film.mp4 --zielgroesse 10MB
+miksan audio lied.wav --to mp3
 miksan formats                        # alle unterstützten Formate
 ```
 
@@ -123,6 +130,8 @@ Genutzte Bibliotheken und ihre Lizenzen:
 | [PySide6](https://doc.qt.io/qtforpython-6/) (Extra `[gui]`) | grafische Oberfläche (Qt) | LGPL-3.0 ⁴ |
 | [pypdf](https://github.com/py-pdf/pypdf) (Extra `[pdf]`) | PDF zusammenfügen, teilen, drehen, verkleinern | BSD-3-Clause |
 | [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) (Extra `[pdf]`) | PDF-Seiten rendern (PDFium) | Apache-2.0 / BSD-3-Clause |
+| [imageio-ffmpeg](https://github.com/imageio/imageio-ffmpeg) (Extra `[medien]`) | ffmpeg mitliefern und finden | BSD-2-Clause |
+| [FFmpeg](https://ffmpeg.org/) (mitgeliefertes Programm, Extra `[medien]` und Windows-Installer) | Video und Ton umwandeln | GPL-3.0 ⁶ |
 | [U²-Net](https://github.com/xuebinqin/U-2-Net) Modell `u2netp` (im Windows-Installer) | Standardmodell „klein“ für Hintergrund entfernen | Apache-2.0 ⁵ |
 
 Die Icons der Oberfläche (`src/miksan_converter/gui/icons/`) und das Programm-Icon sind für
@@ -139,3 +148,7 @@ Abhängigkeiten weitergibt, muss deren Lizenzen beachten.
 verändert sie nicht; der Code dieses Projekts bleibt MIT.
 ⁵ Die ONNX-Datei stammt unverändert aus dem rembg-Projekt; Lizenztext und Herkunft liegen im
 Programmordner unter `_internal\miksan_modelle\` und in `packaging/windows/lizenzen/`.
+⁶ ffmpeg wird nur als eigenes Programm gestartet (nicht eingebunden), der Code dieses Projekts
+bleibt MIT. Das mitgelieferte ffmpeg ist mit `--enable-gpl --enable-version3` übersetzt;
+GPL-Text und Quelltext-Hinweise liegen im Installer unter `lizenzen\`, siehe
+[docs/video-audio.md](docs/video-audio.md).
