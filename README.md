@@ -17,7 +17,8 @@ Aktuelle Version: **0.2.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
 - Ganze Ordner, mehrere Dateien und Muster wie `*.heic` auf einmal verarbeiten – parallel, mit
   Fortschrittsanzeige und Zusammenfassung, siehe [docs/ordner.md](docs/ordner.md)
 - Hintergrund entfernen mit lokalem KI-Modell (`miksan hintergrund`, kurz `miksan bg`; optional),
-  siehe [docs/hintergrund.md](docs/hintergrund.md)
+  mit weicher Kante und neuem Hintergrund (Farbe, Bild, weichgezeichnet), siehe
+  [docs/hintergrund.md](docs/hintergrund.md)
 - Grafische Oberfläche (`miksan-gui`; optional) im Blau-Weiss-Design mit Startseite,
   Seitenleiste und einer Seite pro Werkzeug: Bilder und Ordner per Drag & Drop umwandeln,
   bearbeiten und freistellen, mit Fortschritt, Abbrechen und Zusammenfassung, siehe
@@ -110,6 +111,7 @@ Genutzte Bibliotheken und ihre Lizenzen:
 | [rembg](https://github.com/danielgatis/rembg) (Extra `[ki]`) | Hintergrund entfernen | MIT ³ |
 | [ONNX Runtime](https://onnxruntime.ai/) (Extra `[ki]`) | KI-Modell auf der CPU ausführen | MIT |
 | [PySide6](https://doc.qt.io/qtforpython-6/) (Extra `[gui]`) | grafische Oberfläche (Qt) | LGPL-3.0 ⁴ |
+| [U²-Net](https://github.com/xuebinqin/U-2-Net) Modell `u2netp` (im Windows-Installer) | Standardmodell „klein“ für Hintergrund entfernen | Apache-2.0 ⁵ |
 
 Die Icons der Oberfläche (`src/miksan_converter/gui/icons/`) und das Programm-Icon sind für
 dieses Projekt selbst gezeichnet und stehen wie der übrige Code unter MIT.
@@ -123,3 +125,5 @@ Abhängigkeiten weitergibt, muss deren Lizenzen beachten.
 [docs/hintergrund.md](docs/hintergrund.md).
 ⁴ PySide6 und Qt stehen unter LGPL-3.0. Miksan-Converter bindet sie nur dynamisch ein und
 verändert sie nicht; der Code dieses Projekts bleibt MIT.
+⁵ Die ONNX-Datei stammt unverändert aus dem rembg-Projekt; Lizenztext und Herkunft liegen im
+Programmordner unter `_internal\miksan_modelle\` und in `packaging/windows/lizenzen/`.

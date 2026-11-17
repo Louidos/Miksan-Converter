@@ -83,9 +83,14 @@ jobs:
           }
           uv run --no-sync python -c "from PIL import Image; import pillow_heif; pillow_heif.register_heif_opener(); [print(f, Image.open(rf'$test\aus\bild.{f}').format) for f in ('jpg', 'heic', 'webp')]"
 
-      - name: "Rauchtest: Hintergrund entfernen (lädt das kleine Modell)"
+      - name: "Rauchtest: Hintergrund entfernen (mitgeliefertes Modell, ohne Download)"
         run: |
           $test = "$env:RUNNER_TEMP\rauchtest"
+          foreach ($datei in 'u2netp.onnx', 'U-2-Net-LICENSE.txt', 'MODELLE.txt') {
+            if (-not (Test-Path "$env:APP\_internal\miksan_modelle\$datei")) { throw "$datei fehlt im Programm" }
+          }
+          # Ein Download würde mit dieser Variable als Fehler enden
+          $env:MIKSAN_KEIN_DOWNLOAD = "1"
           & "$env:APP\miksan.exe" bg "$test\bild.png" "$test\aus\frei.png" --modell klein
           if ($LASTEXITCODE -ne 0) { throw "Hintergrund entfernen fehlgeschlagen" }
           if (-not (Test-Path "$test\aus\frei.png")) { throw "frei.png fehlt" }

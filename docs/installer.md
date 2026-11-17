@@ -28,14 +28,24 @@ Hintergrund entfernen). Python wird nicht gebraucht.
 
 ## Hintergrund entfernen
 
-Die KI-Modelle sind nicht im Installer enthalten (sonst wäre er viel grösser). Beim ersten
-Gebrauch wird das gewählte Modell einmalig aus dem Internet geladen und in
-`%LOCALAPPDATA%\miksan-converter\modelle` gespeichert; danach funktioniert alles offline.
+Das Standardmodell **„klein“** (`u2netp`, ca. 5 MB) ist im Installer enthalten: Hintergrund
+entfernen funktioniert direkt nach der Installation **ohne Internet**. Beim ersten Gebrauch wird
+es nach `%LOCALAPPDATA%\miksan-converter\modelle` kopiert. Das Modell steht unter der
+Apache-Lizenz 2.0 (U²-Net); Lizenztext und Herkunft liegen im Programmordner unter
+`_internal\miksan_modelle\` (`U-2-Net-LICENSE.txt`, `MODELLE.txt`).
+
+Die grösseren Modelle („genau“, „person“, „sehr genau“) sind nicht enthalten (der Installer
+wäre sonst viel grösser). Sie werden im Programm auf der Seite „Hintergrund entfernen“ über den
+Knopf **Herunterladen** einmalig geladen und danach offline genutzt.
 
 ## Aktualisieren
 
 Einfach den neuen Installer ausführen; er ersetzt die vorhandene Installation. Einstellungen und
 Modelle bleiben erhalten.
+
+Beim Bauen lädt `packaging/windows/bauen.py` das kleine Modell einmal nach `build/modelle/`
+(Prüfsumme wird geprüft) und legt die Lizenztexte aus `packaging/windows/lizenzen/` dazu;
+`--ohne-modell` baut ohne Modell.
 
 ## Deinstallieren
 

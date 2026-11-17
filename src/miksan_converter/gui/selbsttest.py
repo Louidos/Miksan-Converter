@@ -58,6 +58,18 @@ def _design_pruefen(zeilen: list[str]) -> bool:
     return ok
 
 
+def _modell_pruefen(zeilen: list[str]) -> bool:
+    """Im Windows-Installer muss das kleine Modell mitgeliefert sein (offline nutzbar)."""
+    if not getattr(sys, "frozen", False):
+        return True
+    from ..hintergrund import mitgelieferte_modelle
+
+    ordner = mitgelieferte_modelle()
+    ok = ordner is not None and (ordner / "u2netp.onnx").is_file()
+    zeilen.append(f"{'ok' if ok else 'FEHLER':<8}Mitgeliefertes Modell: {ordner}")
+    return ok
+
+
 def _fenster_pruefen(zeilen: list[str]) -> bool:
     from PIL import Image
     from PySide6.QtCore import QSettings
@@ -95,6 +107,7 @@ def selbsttest(bericht: Path | None = None) -> int:
 
     zeilen = [f"Miksan-Converter {__version__} – Selbsttest", f"Python {sys.version.split()[0]}"]
     ok = _module_pruefen(zeilen)
+    ok = _modell_pruefen(zeilen) and ok
     try:
         ok = _design_pruefen(zeilen) and ok
     except Exception:

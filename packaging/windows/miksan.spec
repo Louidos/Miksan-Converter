@@ -4,7 +4,9 @@
 #   Miksan-Converter.exe  Oberfläche, ohne Konsolenfenster
 #   miksan.exe            Kommandozeile
 # Beide teilen sich dieselben Bibliotheken (_internal/). Qt-DLLs bleiben eigene Dateien
-# (LGPL). KI-Modelle werden NICHT eingepackt, sie werden beim ersten Gebrauch geladen.
+# (LGPL). Das kleine KI-Modell (u2netp, Apache-2.0) wird mit Lizenz nach miksan_modelle/
+# eingepackt, wenn bauen.py es nach build/modelle/ geladen hat; die grösseren Modelle werden
+# bei Bedarf im Programm heruntergeladen.
 #
 # Aufruf über packaging/windows/bauen.py (oder: pyinstaller packaging/windows/miksan.spec).
 
@@ -38,6 +40,10 @@ versteckt += ["resvg_py", "rawpy", "rawpy._rawpy", "onnxruntime", "PySide6.QtSvg
 # Programm-Icon und Linien-Icons (SVG) der Oberfläche
 daten = collect_data_files("miksan_converter", includes=["**/*.png", "**/*.svg"])
 daten += collect_data_files("rembg")
+# Mitgeliefertes Modell "klein" samt Lizenztexten (von bauen.py vorbereitet)
+MODELLE = REPO / "build" / "modelle"
+if (MODELLE / "u2netp.onnx").is_file():
+    daten += [(str(datei), "miksan_modelle") for datei in MODELLE.iterdir() if datei.is_file()]
 # Pakete, die zur Laufzeit ihre eigene Version über importlib.metadata abfragen
 for paket in ("rembg", "pymatting", "pooch", "onnxruntime", "pillow_heif", "numba", "llvmlite"):
     daten += copy_metadata(paket)

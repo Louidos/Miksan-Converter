@@ -10,7 +10,7 @@ from pathlib import Path
 
 from . import __version__
 from .bearbeiten import REIHENFOLGE, Bearbeitung, groesse_parsen, zuschnitt_parsen
-from .convert import Ergebnis, bearbeiten, quellformat_erkennen, umwandeln
+from .convert import Ergebnis, bearbeiten, farbe_parsen, quellformat_erkennen, umwandeln
 from .fehler import BedienFehler, MiksanFehler
 from .formats import (
     alle_formate,
@@ -20,7 +20,14 @@ from .formats import (
     tabellen_zeilen,
 )
 from .hintergrund import (
+    BILD,
+    FARBE,
+    MAX_KANTE,
     STANDARD_MODELL,
+    STANDARD_UNSCHAERFE,
+    TRANSPARENT,
+    WEICH,
+    ersatz_laden,
     hintergrund_entfernen,
     sitzung_erstellen,
     standard_ausgabe,
@@ -245,6 +252,41 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="nur die Maske ausgeben (weiss = Vordergrund)",
     )
+    hintergrund.add_argument(
+        "--kante",
+        "--feather",
+        dest="kante",
+        type=_kante,
+        default=0,
+        metavar="PX",
+        help=f"Rand der Maske weicher machen, 0–{MAX_KANTE} Pixel (Standard: 0)",
+    )
+    neu = hintergrund.add_mutually_exclusive_group()
+    neu.add_argument(
+        "--neue-farbe",
+        "--replace-color",
+        dest="neue_farbe",
+        metavar="FARBE",
+        help="neuen Hintergrund in dieser Farbe setzen, z. B. weiss oder '#1e6fe0'",
+    )
+    neu.add_argument(
+        "--neues-bild",
+        "--replace-image",
+        dest="neues_bild",
+        type=Path,
+        metavar="DATEI",
+        help="dieses Bild als neuen Hintergrund setzen (füllend eingepasst)",
+    )
+    neu.add_argument(
+        "--weichzeichnen",
+        "--blur",
+        dest="weichzeichnen",
+        type=_positive_zahl,
+        nargs="?",
+        const=STANDARD_UNSCHAERFE,
+        metavar="STAERKE",
+        help=f"weichgezeichnetes Original als Hintergrund (Standard-Stärke {STANDARD_UNSCHAERFE})",
+    )
     hintergrund.set_defaults(ausfuehren=_befehl_hintergrund)
 
     gui = befehle.add_parser(
@@ -273,6 +315,16 @@ def _positive_zahl(text: str) -> int:
         zahl = 0
     if zahl < 1:
         raise argparse.ArgumentTypeError(f"'{text}' ist keine Zahl ab 1")
+    return zahl
+
+
+def _kante(text: str) -> float:
+    try:
+        zahl = float(text)
+    except ValueError:
+        zahl = -1
+    if not 0 <= zahl <= MAX_KANTE:
+        raise argparse.ArgumentTypeError(f"'{text}' ist keine Zahl von 0 bis {MAX_KANTE}")
     return zahl
 
 
@@ -420,7 +472,17 @@ def _befehl_hintergrund(args: argparse.Namespace) -> int:
         "hintergrund": args.background,
         "overwrite": args.overwrite,
         "seite": args.page,
+        "kante": args.kante,
     }
+    if args.neue_farbe is not None:
+        optionen.update(neuer_hintergrund=FARBE, ersatz_farbe=farbe_parsen(args.neue_farbe))
+    elif args.neues_bild is not None:
+        # einmal laden, nicht für jede Datei neu
+        optionen.update(neuer_hintergrund=BILD, ersatz_bild=ersatz_laden(args.neues_bild))
+    elif args.weichzeichnen is not None:
+        optionen.update(neuer_hintergrund=WEICH, unschaerfe=args.weichzeichnen)
+    if args.nur_maske and optionen.get("neuer_hintergrund", TRANSPARENT) != TRANSPARENT:
+        raise BedienFehler("--nur-maske lässt sich nicht mit einem neuen Hintergrund verbinden.")
     einzeln = _einzeldatei(args)
     if einzeln is not None:
         ergebnis = hintergrund_entfernen(*einzeln, **optionen)

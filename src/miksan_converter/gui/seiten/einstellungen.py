@@ -35,6 +35,7 @@ BIBLIOTHEKEN = [
     ("rembg", "Hintergrund entfernen (Extra [ki])", "MIT"),
     ("ONNX Runtime", "KI-Modell ausführen (Extra [ki])", "MIT"),
     ("PySide6 / Qt", "Oberfläche (Extra [gui])", "LGPL-3.0"),
+    ("U²-Net (u2netp)", "Modell „klein“ im Windows-Installer", "Apache-2.0"),
 ]
 
 

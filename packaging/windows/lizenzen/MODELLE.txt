@@ -1,0 +1,14 @@
+Mitgelieferte KI-Modelle von Miksan-Converter
+=============================================
+
+u2netp.onnx  (Modell "klein" für "Hintergrund entfernen")
+
+  Herkunft:  U^2-Net, Xuebin Qin et al., https://github.com/xuebinqin/U-2-Net
+  ONNX-Datei: aus dem rembg-Projekt, https://github.com/danielgatis/rembg
+              (https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx,
+              MD5 8e83ca70e441ab06c318d82300c84806)
+  Lizenz:    Apache License 2.0, siehe U-2-Net-LICENSE.txt
+  Änderungen: keine; die Datei wird unverändert weitergegeben.
+
+Die übrigen Modelle ("genau", "person", "sehr-genau") sind nicht im Installer enthalten und
+werden bei Bedarf im Programm über den Knopf "Herunterladen" geladen.
