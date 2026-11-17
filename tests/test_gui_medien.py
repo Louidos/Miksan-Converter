@@ -31,6 +31,7 @@ def _warten(qtbot, seite) -> None:
 
 def test_ohne_ffmpeg_ausgegraut(qtbot, tmp_path: Path, monkeypatch):
     monkeypatch.setattr(medien, "ffmpeg_finden", lambda: None)
+    monkeypatch.setattr(medien, "ffmpeg_vorhanden", lambda: False)
     fenster = app.Hauptfenster(QSettings(str(tmp_path / "x.ini"), QSettings.Format.IniFormat))
     qtbot.addWidget(fenster)
     seite = fenster.seite_zeigen("video_umwandeln")
