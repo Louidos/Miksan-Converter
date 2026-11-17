@@ -35,6 +35,8 @@ BIBLIOTHEKEN = [
     ("rembg", "Hintergrund entfernen (Extra [ki])", "MIT"),
     ("ONNX Runtime", "KI-Modell ausführen (Extra [ki])", "MIT"),
     ("PySide6 / Qt", "Oberfläche (Extra [gui])", "LGPL-3.0"),
+    ("pypdf", "PDF bearbeiten (Extra [pdf])", "BSD-3-Clause"),
+    ("pypdfium2", "PDF-Seiten rendern (Extra [pdf])", "Apache-2.0 / BSD-3-Clause"),
     ("U²-Net (u2netp)", "Modell „klein“ im Windows-Installer", "Apache-2.0"),
 ]
 

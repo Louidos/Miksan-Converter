@@ -29,27 +29,39 @@ VERSION = str(VERSION_INFO) if sys.platform == "win32" and VERSION_INFO.is_file(
 
 # Pakete, die PyInstaller nicht vollständig von selbst findet
 versteckt = []
-for paket in ("miksan_converter", "pillow_heif", "pymatting"):
+for paket in ("miksan_converter", "pillow_heif", "pymatting", "pypdf", "pypdfium2"):
     versteckt += collect_submodules(paket)
 # rembg ohne eigene Kommandozeile (bräuchte click und weitere Pakete)
 versteckt += collect_submodules(
     "rembg", filter=lambda name: not name.startswith(("rembg.cli", "rembg.commands"))
 )
 versteckt += ["resvg_py", "rawpy", "rawpy._rawpy", "onnxruntime", "PySide6.QtSvg"]
+versteckt += collect_submodules("pypdfium2_raw") + collect_submodules("pypdfium2_cfg")
 
 # Programm-Icon und Linien-Icons (SVG) der Oberfläche
 daten = collect_data_files("miksan_converter", includes=["**/*.png", "**/*.svg"])
 daten += collect_data_files("rembg")
+daten += collect_data_files("pypdfium2") + collect_data_files("pypdfium2_raw")
 # Mitgeliefertes Modell "klein" samt Lizenztexten (von bauen.py vorbereitet)
 MODELLE = REPO / "build" / "modelle"
 if (MODELLE / "u2netp.onnx").is_file():
     daten += [(str(datei), "miksan_modelle") for datei in MODELLE.iterdir() if datei.is_file()]
 # Pakete, die zur Laufzeit ihre eigene Version über importlib.metadata abfragen
-for paket in ("rembg", "pymatting", "pooch", "onnxruntime", "pillow_heif", "numba", "llvmlite"):
+for paket in (
+    "rembg",
+    "pymatting",
+    "pooch",
+    "onnxruntime",
+    "pillow_heif",
+    "numba",
+    "llvmlite",
+    "pypdf",
+    "pypdfium2",
+):
     daten += copy_metadata(paket)
 
 binaer = []
-for paket in ("pillow_heif", "rawpy", "resvg_py", "onnxruntime"):
+for paket in ("pillow_heif", "rawpy", "resvg_py", "onnxruntime", "pypdfium2_raw"):
     binaer += collect_dynamic_libs(paket)
 
 # Nicht gebraucht: macht den Installer nur grösser

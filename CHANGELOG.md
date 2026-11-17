@@ -11,6 +11,7 @@ die Versionen folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 - Vorschau mit Vorher/Nachher-Schieber und geschätzter Dateigrösse vor dem Umwandeln (#21)
 - Hintergrund entfernen mit Vorschau, neuem Hintergrund (Farbe, Bild, weichgezeichnet) und weicher Kante; im Windows-Installer ohne Internet nutzbar (#22)
+- PDF-Werkzeuge: zusammenfügen, teilen, Seiten drehen/löschen, PDF ↔ Bilder, verkleinern (Extra `[pdf]`) (#23)
 
 ### Geändert
 

@@ -41,6 +41,11 @@ selben Format. Details in [bearbeiten.md](bearbeiten.md).
 
 Alias `miksan bg`, braucht das Extra `[ki]`. Details in [hintergrund.md](hintergrund.md).
 
+## `miksan pdf` – PDF-Werkzeuge
+
+Braucht das Extra `[pdf]`: `zusammenfuegen`, `teilen`, `drehen`, `loeschen`, `bilder`,
+`aus-bildern`, `verkleinern`. Details in [pdf.md](pdf.md).
+
 ## `miksan gui` – grafische Oberfläche
 
 Alias `miksan oberflaeche`, braucht das Extra `[gui]`. Öffnet dasselbe Fenster wie `miksan-gui`.

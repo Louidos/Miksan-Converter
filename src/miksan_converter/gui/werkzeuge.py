@@ -98,6 +98,69 @@ WERKZEUGE: list[Werkzeug] = [
         extra="ki",
         extra_zweck="Hintergrund entfernen",
     ),
+    *(
+        Werkzeug(
+            name,
+            titel,
+            icon,
+            "PDF",
+            text,
+            f"pdf:{klasse}",
+            arten=arten,
+            extra="pdf",
+            extra_zweck="Die PDF-Werkzeuge",
+        )
+        for name, titel, icon, text, klasse, arten in (
+            (
+                "pdf_zusammenfuegen",
+                "PDF zusammenfügen",
+                "zusammenfuegen",
+                "Mehrere PDFs in der gewünschten Reihenfolge zu einem verbinden.",
+                "ZusammenfuegenSeite",
+                frozenset({PDF}),
+            ),
+            (
+                "pdf_teilen",
+                "PDF teilen",
+                "teilen",
+                "Jede Seite einzeln oder Bereiche wie 1-3,5 als eigene PDFs speichern.",
+                "TeilenSeite",
+                frozenset({PDF}),
+            ),
+            (
+                "pdf_seiten",
+                "Seiten drehen & löschen",
+                "drehen",
+                "Einzelne oder alle Seiten drehen und Seiten entfernen.",
+                "SeitenSeite",
+                frozenset({PDF}),
+            ),
+            (
+                "pdf_bilder",
+                "PDF → Bilder",
+                "bild",
+                "Seiten als PNG oder JPEG speichern, Auflösung wählbar.",
+                "BilderSeite",
+                frozenset({PDF}),
+            ),
+            (
+                "bilder_pdf",
+                "Bilder → PDF",
+                "pdf",
+                "Bilder zu einem PDF zusammenstellen, A4 oder in Bildgrösse.",
+                "AusBildernSeite",
+                frozenset({BILD, ORDNER}),
+            ),
+            (
+                "pdf_verkleinern",
+                "PDF verkleinern",
+                "verkleinern",
+                "Eingebettete Bilder neu komprimieren, damit das PDF kleiner wird.",
+                "VerkleinernSeite",
+                frozenset({PDF}),
+            ),
+        )
+    ),
 ]
 
 # Feste Seiten ausserhalb der Werkzeuge

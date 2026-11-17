@@ -239,7 +239,13 @@ _KURZNAMEN = {
 _PIL_ALIASE = {"MPO": "jpeg", "APNG": "png"}
 
 # Paketname des Extras -> Python-Modul, an dem es erkannt wird
-_EXTRA_MODULE = {"svg": "resvg_py", "raw": "rawpy", "ki": "rembg", "gui": "PySide6"}
+_EXTRA_MODULE = {
+    "svg": ("resvg_py",),
+    "raw": ("rawpy",),
+    "ki": ("rembg",),
+    "gui": ("PySide6",),
+    "pdf": ("pypdf", "pypdfium2"),
+}
 
 
 def alle_formate() -> tuple[Format, ...]:
@@ -247,7 +253,7 @@ def alle_formate() -> tuple[Format, ...]:
 
 
 def extra_installiert(extra: str) -> bool:
-    return importlib.util.find_spec(_EXTRA_MODULE[extra]) is not None
+    return all(importlib.util.find_spec(modul) is not None for modul in _EXTRA_MODULE[extra])
 
 
 _NACH_NAME = {fmt.name: fmt for fmt in FORMATE}
