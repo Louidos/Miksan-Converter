@@ -38,7 +38,7 @@ jobs:
           }
 
       - name: Abhängigkeiten installieren
-        run: uv sync --locked --no-dev --extra gui --extra svg --extra raw --extra ki --group installer
+        run: uv sync --locked --no-dev --extra gui --extra svg --extra raw --extra ki --extra pdf --group installer
 
       - name: Inno Setup installieren
         run: choco install innosetup --yes --no-progress
@@ -96,6 +96,19 @@ jobs:
           if (-not (Test-Path "$test\aus\frei.png")) { throw "frei.png fehlt" }
           $modelle = "$env:LOCALAPPDATA\miksan-converter\modelle"
           if (-not (Get-ChildItem -Recurse -Filter *.onnx $modelle)) { throw "Modell nicht in $modelle" }
+
+      - name: "Rauchtest: PDF zusammenfügen und in Bilder umwandeln"
+        run: |
+          $miksan = "$env:APP\miksan.exe"
+          $test = "$env:RUNNER_TEMP\rauchtest-pdf"
+          New-Item -ItemType Directory -Force $test | Out-Null
+          uv run --no-sync python -c "from PIL import Image; [Image.new('RGB', (100, 140), (40 * i, 90, 200)).save(rf'$test\s{i}.pdf') for i in range(2)]"
+          & $miksan pdf zusammenfuegen "$test\s0.pdf" "$test\s1.pdf" -o "$test\gesamt.pdf"
+          if ($LASTEXITCODE -ne 0) { throw "PDF zusammenfügen fehlgeschlagen" }
+          & $miksan pdf bilder "$test\gesamt.pdf" -o "$test\bilder"
+          if ($LASTEXITCODE -ne 0) { throw "PDF -> Bilder fehlgeschlagen" }
+          $anzahl = (Get-ChildItem "$test\bilder\*.png").Count
+          if ($anzahl -ne 2) { throw "Erwartet 2 Bilder, gefunden $anzahl" }
 
       - name: "Rauchtest: Oberfläche (Selbsttest)"
         run: |

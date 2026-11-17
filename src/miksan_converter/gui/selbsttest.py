@@ -23,6 +23,8 @@ MODULE = (
     "rembg",
     "PySide6.QtWidgets",
     "PySide6.QtSvg",
+    "pypdf",
+    "pypdfium2",
 )
 
 

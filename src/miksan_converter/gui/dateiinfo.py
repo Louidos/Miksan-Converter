@@ -21,12 +21,18 @@ class DateiInfo:
     hoehe: int | None = None
     groesse: int | None = None  # Byte
     anzahl: int | None = None  # bei Ordnern: Anzahl Bilder (ohne Unterordner)
+    seiten: int | None = None  # bei PDFs
+    geschuetzt: bool = False  # PDF mit Passwort
 
     def text(self) -> str:
         """Kurze Zeile unter dem Dateinamen, z. B. "PNG · 1200 × 800 · 1.4 MB"."""
         if self.ordner:
             return "Ordner" if self.anzahl is None else f"Ordner · {self.anzahl} Dateien"
         teile = [self.format] if self.format else []
+        if self.geschuetzt:
+            teile.append("mit Passwort")
+        elif self.seiten is not None:
+            teile.append(f"{self.seiten} Seite{'n' if self.seiten != 1 else ''}")
         if self.breite and self.hoehe:
             teile.append(f"{self.breite} × {self.hoehe}")
         if self.groesse is not None:
@@ -62,6 +68,8 @@ def datei_info(pfad: str | Path) -> DateiInfo:
         info.groesse = pfad.stat().st_size
     except OSError:
         return info
+    if pfad.suffix.lower() == ".pdf":
+        return _pdf_info(info)
     try:
         with Image.open(pfad) as bild:
             info.breite, info.hoehe = bild.size
@@ -74,6 +82,33 @@ def datei_info(pfad: str | Path) -> DateiInfo:
     return info
 
 
+def _pdf_info(info: DateiInfo) -> DateiInfo:
+    try:
+        from .. import pdf
+
+        if pdf.ist_verschluesselt(info.pfad):
+            info.geschuetzt = True
+        else:
+            info.seiten = pdf.seiten_anzahl(info.pfad)
+    except Exception:  # ohne Extra [pdf] oder beschädigt: nur Endung und Grösse
+        pass
+    return info
+
+
+def _pdf_miniatur(pfad: Path, kante: int):
+    from .. import pdf
+
+    try:
+        bild = pdf.seite_rendern(pfad, 0, dpi=36)
+    except Exception:  # ohne Extra, geschützt oder beschädigt
+        return None
+    faktor = kante / max(bild.size)
+    if faktor < 1:
+        groesse = (max(1, round(bild.width * faktor)), max(1, round(bild.height * faktor)))
+        bild = bild.resize(groesse)
+    return bild.convert("RGBA")
+
+
 def miniatur(pfad: str | Path, kante: int = 96):
     """Kleines Vorschaubild (PIL, RGBA) oder ``None``, wenn die Datei kein Bild ist."""
     from PIL import Image, ImageOps
@@ -81,6 +116,8 @@ def miniatur(pfad: str | Path, kante: int = 96):
     pfad = Path(pfad)
     if pfad.is_dir():
         return None
+    if pfad.suffix.lower() == ".pdf":
+        return _pdf_miniatur(pfad, kante)
     try:
         with Image.open(pfad) as offen:
             offen.draft("RGB", (kante * 2, kante * 2))  # JPEG: gleich verkleinert laden

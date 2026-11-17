@@ -25,6 +25,7 @@ svg = ["resvg-py>=0.2"]
 raw = ["rawpy>=0.21"]
 ki = ["rembg[cpu]>=2.0.60"]
 gui = ["PySide6-Essentials>=6.7"]
+pdf = ["pypdf>=5.0", "pypdfium2>=4.30"]
 
 [project.scripts]
 miksan = "miksan_converter.cli:main"

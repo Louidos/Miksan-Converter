@@ -23,6 +23,8 @@ Aktuelle Version: **0.2.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
   Seitenleiste und einer Seite pro Werkzeug: Bilder und Ordner per Drag & Drop umwandeln,
   bearbeiten und freistellen, mit Fortschritt, Abbrechen und Zusammenfassung, siehe
   [docs/oberflaeche.md](docs/oberflaeche.md)
+- PDF-Werkzeuge (`miksan pdf`; optional): zusammenfügen, teilen, Seiten drehen und löschen,
+  PDF → Bilder, Bilder → PDF, verkleinern – auch in der Oberfläche, siehe [docs/pdf.md](docs/pdf.md)
 - Windows-Installer (`MiksanConverter-Setup-X.Y.Z.exe`) ohne Python, siehe
   [docs/installer.md](docs/installer.md)
 
@@ -55,7 +57,8 @@ pip install "miksan-converter[svg]"   # SVG als Eingabe
 pip install "miksan-converter[raw]"   # Kamera-RAW als Eingabe
 pip install "miksan-converter[ki]"    # Hintergrund entfernen (lokales KI-Modell)
 pip install "miksan-converter[gui]"   # grafische Oberfläche (miksan-gui)
-pip install "miksan-converter[gui,ki,svg,raw]"   # alles
+pip install "miksan-converter[pdf]"   # PDF-Werkzeuge (miksan pdf)
+pip install "miksan-converter[gui,ki,svg,raw,pdf]"   # alles
 ```
 
 ## Start
@@ -79,6 +82,7 @@ miksan bearbeiten foto.jpg --zielgroesse 300KB --metadaten-entfernen
 miksan bg portrait.jpg portrait.png   # Hintergrund entfernen (Extra [ki])
 miksan convert fotos/ --to jpg -o fertig/        # ganzer Ordner
 miksan bg fotos/ -o freigestellt/ --rekursiv
+miksan pdf zusammenfuegen a.pdf b.pdf -o gesamt.pdf   # PDF-Werkzeuge (Extra [pdf])
 miksan formats                        # alle unterstützten Formate
 ```
 
@@ -111,6 +115,8 @@ Genutzte Bibliotheken und ihre Lizenzen:
 | [rembg](https://github.com/danielgatis/rembg) (Extra `[ki]`) | Hintergrund entfernen | MIT ³ |
 | [ONNX Runtime](https://onnxruntime.ai/) (Extra `[ki]`) | KI-Modell auf der CPU ausführen | MIT |
 | [PySide6](https://doc.qt.io/qtforpython-6/) (Extra `[gui]`) | grafische Oberfläche (Qt) | LGPL-3.0 ⁴ |
+| [pypdf](https://github.com/py-pdf/pypdf) (Extra `[pdf]`) | PDF zusammenfügen, teilen, drehen, verkleinern | BSD-3-Clause |
+| [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) (Extra `[pdf]`) | PDF-Seiten rendern (PDFium) | Apache-2.0 / BSD-3-Clause |
 | [U²-Net](https://github.com/xuebinqin/U-2-Net) Modell `u2netp` (im Windows-Installer) | Standardmodell „klein“ für Hintergrund entfernen | Apache-2.0 ⁵ |
 
 Die Icons der Oberfläche (`src/miksan_converter/gui/icons/`) und das Programm-Icon sind für

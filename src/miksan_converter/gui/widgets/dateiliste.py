@@ -50,6 +50,8 @@ class DateiZeile(QWidget):
         self.bild.setFixedSize(MINIATUR, MINIATUR)
         self.bild.setAlignment(Qt.AlignmentFlag.AlignCenter)
         symbol = "ordner" if Path(pfad).is_dir() else "bild"
+        if Path(pfad).suffix.lower() == ".pdf":
+            symbol = "pdf"
         self.bild.setPixmap(design.icon(symbol, design.NEBENTEXT).pixmap(28, 28))
         layout.addWidget(self.bild)
 
@@ -119,7 +121,44 @@ class DateiListe(QListWidget):
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.setUniformItemSizes(False)
+        self._sortierbar = False
         lader.geladen.connect(self._geladen)
+
+    def sortierbar_machen(self) -> None:
+        """Reihenfolge per Ziehen (und Alt+↑/↓) änderbar, z. B. zum Zusammenfügen."""
+        self._sortierbar = True
+        self.setDragEnabled(True)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.setToolTip("Reihenfolge per Ziehen oder mit Alt+↑/↓ ändern")
+
+    def verschieben(self, von: int, nach: int) -> None:
+        """Verschiebt den Eintrag von Zeile ``von`` nach ``nach`` (mit neuem Zeilen-Widget)."""
+        if not (0 <= von < self.count()) or von == nach:
+            return
+        nach = max(0, min(nach, self.count() - 1))
+        eintrag = self.takeItem(von)
+        pfad = eintrag.data(Qt.ItemDataRole.UserRole)
+        alte = self._zeilen[pfad][1]
+        self.insertItem(nach, eintrag)
+        zeile = DateiZeile(pfad)
+        zeile.entfernen.connect(self.entfernen)
+        zeile.info_setzen(self.lader.bild(pfad), self.lader.info(pfad))
+        zeile.status_setzen("", "")
+        alte.deleteLater()
+        self.setItemWidget(eintrag, zeile)
+        eintrag.setSizeHint(zeile.sizeHint())
+        self._zeilen[pfad] = (eintrag, zeile)
+        self.setCurrentRow(nach)
+        self.geaendert.emit()
+
+    def keyPressEvent(self, event) -> None:  # noqa: N802 – Qt-Name
+        if self._sortierbar and event.modifiers() & Qt.KeyboardModifier.AltModifier:
+            schritt = {Qt.Key.Key_Up: -1, Qt.Key.Key_Down: 1}.get(event.key())
+            if schritt is not None and self.currentRow() >= 0:
+                self.verschieben(self.currentRow(), self.currentRow() + schritt)
+                return
+        super().keyPressEvent(event)
 
     # --- Inhalt ---------------------------------------------------------------------
 
@@ -197,18 +236,30 @@ class DateiListe(QListWidget):
     # --- Drag & Drop ----------------------------------------------------------------
 
     def dragEnterEvent(self, event) -> None:  # noqa: N802 – Qt-Name
-        if event.mimeData().hasUrls():
+        if self._sortierbar and event.source() is self:
+            event.accept()
+        elif event.mimeData().hasUrls():
             event.acceptProposedAction()
         else:
             super().dragEnterEvent(event)
 
     def dragMoveEvent(self, event) -> None:  # noqa: N802 – Qt-Name
-        if event.mimeData().hasUrls():
+        if self._sortierbar and event.source() is self:
+            event.accept()
+        elif event.mimeData().hasUrls():
             event.acceptProposedAction()
         else:
             super().dragMoveEvent(event)
 
     def dropEvent(self, event) -> None:  # noqa: N802 – Qt-Name
+        if self._sortierbar and event.source() is self:
+            ziel = self.indexAt(event.position().toPoint()).row()
+            ziel = self.count() - 1 if ziel < 0 else ziel
+            if self.currentRow() >= 0:
+                self.verschieben(self.currentRow(), ziel)
+            event.setDropAction(Qt.DropAction.IgnoreAction)
+            event.accept()
+            return
         pfade = abgelegte_pfade(event)
         if pfade:
             event.acceptProposedAction()

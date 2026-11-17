@@ -207,7 +207,16 @@ def test_werkzeuge_nach_bereich_und_art(tmp_path: Path):
     passende = dict(
         (w.name, n) for w, n in werkzeuge.passende_werkzeuge(["a.png", "b.jpg", "c.txt"])
     )
-    assert passende == {"umwandeln": 2, "bearbeiten": 2, "hintergrund": 2}
+    assert passende == {"umwandeln": 2, "bearbeiten": 2, "hintergrund": 2, "bilder_pdf": 2}
+    pdf_werkzeuge = {w.name for w, _ in werkzeuge.passende_werkzeuge(["a.pdf"])}
+    assert pdf_werkzeuge == {
+        "pdf_zusammenfuegen",
+        "pdf_teilen",
+        "pdf_seiten",
+        "pdf_bilder",
+        "pdf_verkleinern",
+    }
+    assert [w.name for w in bereiche["PDF"]][0] == "pdf_zusammenfuegen"
     assert werkzeuge.passende_werkzeuge(["c.txt"]) == []
 
 
