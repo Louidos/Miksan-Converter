@@ -1,7 +1,7 @@
 # Grafische Oberfläche
 
-Miksan-Converter lässt sich auch ohne Kommandozeile bedienen: Bilder oder Ordner ins Fenster
-ziehen, Aktion und Zielformat wählen, **Start** drücken.
+Miksan-Converter lässt sich auch ohne Kommandozeile bedienen: Dateien ins Fenster ziehen,
+Werkzeug wählen, Optionen einstellen, den blauen Knopf drücken.
 
 ![Hauptfenster](bilder/oberflaeche.png)
 
@@ -37,39 +37,70 @@ Für Entwickler: Farben, Abstände (8-px-Raster), Eckenradius und Schriftgrösse
 (`design.eigenschaft(widget, "primaer")`, `"hinweis"`, `"fehler"` …). Die Icons liegen in
 `src/miksan_converter/gui/icons/` und werden mit `design.icon("name", farbe)` geladen.
 
-## Bedienung
+## Aufbau
 
-1. **Bilder und Ordner hinzufügen** – per Drag & Drop in die Liste (oder irgendwo ins Fenster)
-   oder mit „Dateien hinzufügen …“ bzw. „Ordner hinzufügen …“. „Entfernen“ nimmt die markierten
-   Einträge heraus, „Liste leeren“ alle. Mit **Unterordner einbeziehen** werden Ordner rekursiv
-   durchsucht; die Ordnerstruktur bleibt im Ausgabeordner erhalten.
-2. **Aktion wählen**
-   - **Umwandeln** – in das gewählte Zielformat, optional mit Bearbeitung.
-   - **Bearbeiten** – Zielformat „wie Original“ behält das Format; es entsteht
-     `<name>-bearbeitet` neben dem Original.
-   - **Hintergrund entfernen** – mit lokalem KI-Modell (Extra `[ki]`), es entsteht
-     `<name>-freigestellt.png`. Ist das Extra nicht installiert, ist die Aktion ausgegraut und
-     ein Hinweis nennt den Installationsbefehl.
-3. **Ziel**
-   - **Zielformat** – alle Formate, die Miksan-Converter schreiben kann. Formate, die auf
-     diesem Rechner nicht verfügbar sind, sind ausgegraut (der Tooltip sagt warum). Unter der
-     Auswahl stehen Einschränkungen des Formats.
-   - **Ausgabeordner** – leer bedeutet „neben dem Original“.
-   - **Vorhandene Dateien überschreiben** – sonst wird eine vorhandene Zieldatei als Fehler
-     gemeldet und nicht verändert.
-4. **Bearbeiten** (bei Umwandeln und Bearbeiten): maximale Grösse (längste Seite), Qualität,
-   Zielgrösse (z. B. `500KB`), Drehen, Spiegeln, Metadaten entfernen. Die Regeln sind dieselben
-   wie bei der Kommandozeile, siehe [bearbeiten.md](bearbeiten.md).
-5. **Hintergrund**: Hintergrundfarbe für Formate ohne Transparenz (z. B. JPEG) über den
-   Farbwähler; bei „Hintergrund entfernen“ zusätzlich das KI-Modell (siehe
-   [hintergrund.md](hintergrund.md)).
-6. **Start** – die Dateien werden im Hintergrund verarbeitet (parallel), das Fenster bleibt
-   bedienbar. Der Balken zeigt den Fortschritt. **Abbrechen** startet keine weiteren Dateien
-   mehr; Dateien, die gerade laufen, werden noch fertig.
+Links steht die **Seitenleiste** mit allen Werkzeugen, gegliedert in Bereiche:
 
-Danach steht die Zusammenfassung unter dem Balken (z. B. „Fertig: 12 ok, 1 Fehler,
-2 Hinweise“), darunter die Liste der Fehler und Hinweise pro Datei. **Ausgabeordner öffnen**
+- **Start** – Karten für alle Werkzeuge und eine grosse Ablagefläche „Dateien hierher ziehen“.
+  Nach dem Ablegen bietet die Startseite die Werkzeuge an, die zu den Dateien passen
+  (z. B. bei Fotos: Umwandeln, Verkleinern & Bearbeiten, Hintergrund entfernen).
+- **Bilder** – Umwandeln, Verkleinern & Bearbeiten, Hintergrund entfernen.
+- unten **Einstellungen** und **Info**.
+
+Werkzeuge, für die ein Extra fehlt (z. B. „Hintergrund entfernen“ ohne `[ki]`), sind
+ausgegraut; ihre Seite nennt den Installationsbefehl. Der Rest der App läuft normal.
+
+Jede Werkzeug-Seite ist gleich aufgebaut:
+
+- **links** die Ablagefläche bzw., sobald Dateien da sind, die **Dateiliste** mit Miniaturbild,
+  Dateiname (ganzer Pfad im Tooltip), Format, Masse und Grösse. Das **X** nimmt einen Eintrag
+  heraus, „Entfernen“ alle markierten, „Liste leeren“ alle. Miniaturen werden im Hintergrund
+  geladen, das Fenster bleibt bedienbar. Nach dem Lauf zeigt jede Zeile ihren Status (✓,
+  Hinweis oder Fehler mit Text); bei Ordnern die Summe.
+- **rechts** nur die Optionen dieses Werkzeugs; seltene Optionen stehen unter **Erweitert**.
+- **unten** fest: Ausgabeordner, Fortschritt, **Abbrechen** und der blaue Hauptknopf.
+
+Dateien kann man überall ins Fenster ziehen. Beim Wechsel des Werkzeugs bleibt die Dateiliste
+erhalten, soweit die Dateien zum neuen Werkzeug passen.
+
+## Werkzeuge
+
+- **Umwandeln** – Zielformat und Qualität; unter „Erweitert“ maximale Grösse,
+  Hintergrundfarbe (für Formate ohne Transparenz, z. B. JPEG) und Metadaten entfernen.
+  Formate, die auf diesem Rechner nicht verfügbar sind, sind ausgegraut (der Tooltip sagt
+  warum); unter der Auswahl stehen Einschränkungen des Formats.
+- **Verkleinern & Bearbeiten** – maximale Grösse (längste Seite), Qualität, Zielgrösse
+  (z. B. `500KB`), Drehen, Spiegeln, Metadaten entfernen; unter „Erweitert“ das Zielformat
+  (Standard „wie Original“, es entsteht `<name>-bearbeitet` neben dem Original) und die
+  Hintergrundfarbe. Die Regeln sind dieselben wie bei der Kommandozeile, siehe
+  [bearbeiten.md](bearbeiten.md).
+- **Hintergrund entfernen** – KI-Modell und Zielformat (Standard PNG, es entsteht
+  `<name>-freigestellt.png`), siehe [hintergrund.md](hintergrund.md).
+
+Der Hauptknopf startet die Verarbeitung im Hintergrund (parallel), das Fenster bleibt
+bedienbar. **Abbrechen** startet keine weiteren Dateien mehr; Dateien, die gerade laufen,
+werden noch fertig. Danach steht die Zusammenfassung unter dem Balken (z. B. „Fertig: 12 ok,
+1 Fehler, 2 Hinweise“), darunter die Fehler und Hinweise pro Datei. **Ausgabeordner öffnen**
 zeigt die Ergebnisse im Dateimanager.
+
+## Einstellungen und Info
+
+- **Einstellungen** (gelten für alle Werkzeuge, werden sofort gespeichert):
+  Standard-Ausgabeordner (leer = neben dem Original; ein Ordner unten auf einer Werkzeug-Seite
+  hat Vorrang), vorhandene Dateien überschreiben, Unterordner einbeziehen (die Ordnerstruktur
+  bleibt im Ausgabeordner erhalten), Ordner der KI-Modelle mit „Ordner öffnen“ und
+  „Modelle löschen“.
+- **Info**: Version, Lizenz, genutzte Bibliotheken, Link zum Repo. Miksan-Converter arbeitet
+  lokal – ohne Cloud, ohne Werbung, ohne Telemetrie.
+
+## Tastenkürzel
+
+| Taste | Wirkung |
+|---|---|
+| Strg+O | Dateien hinzufügen |
+| Entf | markierte Einträge entfernen |
+| Strg+Enter | starten |
+| Esc | abbrechen |
 
 ### Hintergrund entfernen zum ersten Mal
 
@@ -79,8 +110,9 @@ gespeichert (siehe [hintergrund.md](hintergrund.md)) und danach offline genutzt.
 
 ## Einstellungen merken
 
-Das Fenster merkt sich die zuletzt gewählten Einstellungen (Aktion, Zielformat je Aktion,
-Ausgabeordner, Bearbeitungsoptionen, Farbe, Modell) über `QSettings`:
+Jedes Werkzeug merkt sich seine zuletzt gewählten Einstellungen (Zielformat, Ausgabeordner,
+Bearbeitungsoptionen, Farbe, Modell) über `QSettings`. Einstellungen aus Version 0.2 werden
+weiter gelesen und gehen nicht verloren:
 
 | System | Ort |
 |---|---|
@@ -96,3 +128,9 @@ Die Oberfläche nutzt dieselben Funktionen wie die Kommandozeile (`stapel.dateie
 `auftraege_planen`, `ausfuehren` mit `convert.umwandeln`, `convert.bearbeiten` und
 `hintergrund.hintergrund_entfernen`). Ergebnisse sind daher identisch zu
 `miksan convert … --to … -o …`.
+
+Aufbau des Codes in `src/miksan_converter/gui/`: `fenster.py` (Rahmen und Seitenleiste),
+`werkzeuge.py` (zentrale Werkzeug-Registrierung: Name, Icon, Bereich, Seite, benötigtes Extra),
+`seiten/` (eine Datei pro Werkzeug, gemeinsame Basis in `seiten/basis.py`), `widgets/`
+(Ablagefläche, Dateiliste, Miniaturen, Ablaufleiste), `logik.py` und `dateiinfo.py` (ohne Qt,
+normal testbar), `design.py` (Farben, Masse, Stylesheet, Icons).

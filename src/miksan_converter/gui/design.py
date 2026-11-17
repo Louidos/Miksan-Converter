@@ -42,7 +42,7 @@ SCHRIFT_TITEL_PT = 16
 SCHRIFT_UNTERTITEL_PT = 12
 ICON = 18  # Icons in Knöpfen und Listen
 ICON_GROSS = 32  # Icons auf den Karten der Startseite
-SEITENLEISTE_BREITE = 208
+SEITENLEISTE_BREITE = 232
 SCROLLBALKEN = 10
 
 ICON_ORDNER = Path(__file__).with_name("icons")
@@ -153,9 +153,9 @@ QPushButton[rolle="flach"]:focus, QToolButton[rolle="flach"]:focus {{
 }}
 
 /* Seitenleiste */
+QFrame[rolle="seitenleiste"] {{ background: {FLAECHE}; border-right: 1px solid {RAHMEN}; }}
 QListWidget[rolle="seitenleiste"] {{
-    background: {FLAECHE}; border: none; border-right: 1px solid {RAHMEN};
-    padding: {a(1)}px; outline: none;
+    background: transparent; border: none; padding: {a(1)}px; outline: none;
 }}
 QListWidget[rolle="seitenleiste"]::item {{
     border-radius: {r}px; padding: {a(1)}px {a(1)}px; margin: 1px 0; color: {TEXT};
