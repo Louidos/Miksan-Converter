@@ -32,7 +32,8 @@ def an_laufendes_senden(pfade: list[str], name: str | None = None) -> bool:
     verbindung.connectToServer(name or standard_name())
     if not verbindung.waitForConnected(WARTEN_MS):
         return False
-    verbindung.write(json.dumps({"pfade": pfade}).encode("utf-8"))
+    # Eine Zeile JSON; das Zeilenende markiert „Nachricht vollständig“
+    verbindung.write(json.dumps({"pfade": pfade}).encode("utf-8") + b"\n")
     verbindung.flush()
     verbindung.waitForBytesWritten(WARTEN_MS)
     verbindung.disconnectFromServer()
@@ -68,15 +69,25 @@ class Einzelinstanz(QObject):
             verbindung = self.server.nextPendingConnection()
             self._puffer[verbindung] = b""
             verbindung.readyRead.connect(lambda v=verbindung: self._lesen(v))
-            verbindung.disconnected.connect(lambda v=verbindung: self._fertig(v))
+            verbindung.disconnected.connect(lambda v=verbindung: self._lesen(v, ende=True))
+            # Daten können schon da sein (z. B. unter Windows), bevor die Signale verbunden sind
+            self._lesen(
+                verbindung,
+                ende=verbindung.state() == QLocalSocket.LocalSocketState.UnconnectedState,
+            )
 
-    def _lesen(self, verbindung: QLocalSocket) -> None:
-        self._puffer[verbindung] = self._puffer.get(verbindung, b"") + bytes(verbindung.readAll())
+    def _lesen(self, verbindung: QLocalSocket, ende: bool = False) -> None:
+        if verbindung not in self._puffer:
+            return  # schon verarbeitet
+        self._puffer[verbindung] += bytes(verbindung.readAll())
+        if self._puffer[verbindung].endswith(b"\n") or ende:
+            self._fertig(verbindung)
 
     def _fertig(self, verbindung: QLocalSocket) -> None:
-        self._lesen(verbindung)
         daten = self._puffer.pop(verbindung, b"")
         verbindung.deleteLater()
+        if not daten.strip():
+            return
         try:
             pfade = json.loads(daten.decode("utf-8")).get("pfade", [])
         except (ValueError, AttributeError):
