@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
     QGridLayout,
-    QHBoxLayout,
     QLabel,
     QPushButton,
     QScrollArea,
@@ -122,6 +121,7 @@ class StartSeite(QWidget):
         rollen = QScrollArea()
         rollen.setWidgetResizable(True)
         rollen.setFrameShape(QScrollArea.Shape.NoFrame)
+        rollen.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         rollen.setWidget(inhalt)
         aussen.addWidget(rollen)
 
@@ -172,20 +172,21 @@ class StartSeite(QWidget):
         self.auswahl_layout.addWidget(design.eigenschaft(QLabel(titel), "untertitel"))
         self.knoepfe: dict[str, QPushButton] = {}
         passende = passende_werkzeuge(self.abgelegte)
-        zeile = QHBoxLayout()
-        zeile.setSpacing(design.abstand(1))
-        for werkzeug, treffer in passende:
-            knopf = QPushButton(design.icon(werkzeug.icon, design.AKZENT), werkzeug.titel)
+        raster = QGridLayout()
+        raster.setSpacing(design.abstand(1))
+        for nummer, (werkzeug, treffer) in enumerate(passende):
+            # „&“ wäre sonst ein Tastenkürzel-Zeichen
+            text = werkzeug.titel.replace("&", "&&")
+            knopf = QPushButton(design.icon(werkzeug.icon, design.AKZENT), text)
             knopf.setToolTip(werkzeug.hinweis() or f"{treffer} von {anzahl} Dateien passen")
             knopf.setEnabled(werkzeug.verfuegbar())
             knopf.clicked.connect(lambda _=False, name=werkzeug.name: self._oeffnen(name))
-            zeile.addWidget(knopf)
+            raster.addWidget(knopf, nummer // SPALTEN, nummer % SPALTEN)
             self.knoepfe[werkzeug.name] = knopf
-        zeile.addStretch(1)
+        self.auswahl_layout.addLayout(raster)
         leeren = design.eigenschaft(QPushButton("Verwerfen"), "flach")
         leeren.clicked.connect(self.leeren)
-        zeile.addWidget(leeren)
-        self.auswahl_layout.addLayout(zeile)
+        self.auswahl_layout.addWidget(leeren, 0, Qt.AlignmentFlag.AlignRight)
         if not passende:
             self.auswahl_layout.addWidget(
                 design.eigenschaft(QLabel("Für diese Dateien gibt es kein Werkzeug."), "warnung")

@@ -27,7 +27,8 @@ def oberflaeche_starten(argv: Sequence[str] | None = None) -> int:
 def main() -> int:
     """Einstiegspunkt für ``miksan-gui``; Dateien und Ordner als Argumente werden übernommen.
 
-    Versteckt: ``miksan-gui --selbsttest [BERICHT]`` prüft Extras und Fenster ohne Bildschirm.
+    Versteckt: ``miksan-gui --selbsttest [BERICHT]`` prüft Extras und Fenster ohne Bildschirm,
+    ``miksan-gui --startzeit [BERICHT]`` misst die Zeit bis zum sichtbaren Fenster.
     """
     argv = sys.argv[1:]
     try:
@@ -35,6 +36,10 @@ def main() -> int:
             from .selbsttest import selbsttest
 
             return selbsttest(Path(argv[1]) if len(argv) > 1 else None)
+        if argv[:1] == ["--startzeit"]:
+            from .selbsttest import startzeit
+
+            return startzeit(Path(argv[1]) if len(argv) > 1 else None)
         return oberflaeche_starten(argv)
     except ExtraFehlt as fehler:
         if sys.stderr is not None:  # ohne Konsole gibt es kein stderr

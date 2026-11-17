@@ -26,6 +26,16 @@ Hintergrund entfernen). Python wird nicht gebraucht.
 - **Kommandozeile:** `miksan.exe` im Programmordner, bzw. `miksan`, wenn der PATH-Eintrag
   gewählt wurde (siehe [bedienung.md](bedienung.md))
 
+## Rechtsklick-Menü und nur ein Fenster
+
+Bei der Installation ist die Aufgabe **„Im Explorer-Rechtsklick-Menü anzeigen“** angehakt: Bilder,
+PDFs, Videos, Tondateien und Ordner haben dann den Eintrag **„Mit Miksan-Converter öffnen“**
+(unter Windows 11 unter „Weitere Optionen anzeigen“). Die Einträge stehen unter
+`Software\Classes\SystemFileAssociations\<endung>\shell\MiksanConverter` (bzw.
+`Directory\shell` für Ordner), ändern keine Standardprogramme und werden beim Deinstallieren
+entfernt. Ein zweiter Start öffnet kein zweites Fenster: die Dateien gehen an das laufende.
+Still installieren ohne Rechtsklick-Menü: `/TASKS=` ohne `kontextmenue`.
+
 ## Hintergrund entfernen
 
 Das Standardmodell **„klein“** (`u2netp`, ca. 5 MB) ist im Installer enthalten: Hintergrund

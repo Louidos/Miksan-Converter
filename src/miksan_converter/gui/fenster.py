@@ -8,6 +8,7 @@ from pathlib import Path
 from PySide6.QtCore import QSettings, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
+    QApplication,
     QFrame,
     QHBoxLayout,
     QListWidget,
@@ -70,6 +71,7 @@ class Hauptfenster(QMainWindow):
         self.lader = MiniaturLader(self)
         self.seiten: dict[str, QWidget] = {}
         self._aktuell = START
+        self._leiste = None  # Taskleisten-Fortschritt, erst bei Bedarf
 
         self.setWindowTitle(f"{TITEL} {__version__}")
         self.setWindowIcon(design.programm_icon())
@@ -136,6 +138,7 @@ class Hauptfenster(QMainWindow):
         modul = importlib.import_module(f".seiten.{modul_name}", __package__)
         seite = getattr(modul, klasse)(eintrag, self.settings, self.lader)
         seite.lauf_geaendert.connect(self._lauf_geaendert)
+        seite.ablauf.fortschritt.valueChanged.connect(lambda _w, s=seite: self._taskleiste(s))
         return self._hinzufuegen(name, seite)
 
     def aktuelle_seite(self) -> QWidget:
@@ -177,6 +180,23 @@ class Hauptfenster(QMainWindow):
 
     # --- Dateien und Tastenkürzel ---------------------------------------------------
 
+    def dateien_von_aussen(self, pfade) -> None:
+        """Dateien aus dem Explorer-Rechtsklick oder einem zweiten Start: auf der Startseite
+        die passenden Werkzeuge anbieten."""
+        vorhandene = [str(Path(p)) for p in pfade if Path(p).exists()]
+        if not vorhandene:
+            return
+        self.seite_zeigen(START)
+        self.startseite.dateien_ablegen(vorhandene)
+
+    def nach_vorne(self) -> None:
+        if self.isMinimized():
+            self.showNormal()
+        self.show()
+        self.raise_()
+        self.activateWindow()
+        QApplication.alert(self)
+
     def pfade_hinzufuegen(self, pfade) -> None:
         """Dateien an die aktuelle Seite geben (Startseite: passende Werkzeuge anbieten)."""
         seite = self.aktuelle_seite()
@@ -217,8 +237,36 @@ class Hauptfenster(QMainWindow):
     def laeuft(self) -> bool:
         return any(isinstance(s, WerkzeugSeite) and s.laeuft() for s in self.seiten.values())
 
-    def _lauf_geaendert(self, _laeuft: bool) -> None:
-        """Platz für Fortschritt in der Taskleiste (Windows)."""
+    def _lauf_geaendert(self, laeuft: bool) -> None:
+        """Fortschritt in der Taskleiste ein-/ausschalten; nach dem Lauf das Symbol blinken."""
+        if not laeuft:
+            if not self.laeuft():
+                self._taskleiste_setzen(None)
+            if not self.isActiveWindow():
+                QApplication.alert(self)
+
+    def _taskleiste(self, seite: WerkzeugSeite) -> None:
+        if seite.laeuft():
+            balken = seite.ablauf.fortschritt
+            self._taskleiste_setzen((balken.value() - balken.minimum(), balken.maximum()))
+
+    def _taskleiste_setzen(self, wert: tuple[int, int] | None) -> None:
+        if self._leiste is None:
+            from .taskleiste import Taskleiste
+
+            self._leiste = Taskleiste()
+        if not self._leiste.aktiv:
+            return
+        from . import taskleiste
+
+        fenster = int(self.winId())
+        if wert is None:
+            self._leiste.zustand(fenster, taskleiste.KEIN)
+        elif wert[1] <= 0:
+            self._leiste.zustand(fenster, taskleiste.UNBESTIMMT)
+        else:
+            self._leiste.zustand(fenster, taskleiste.NORMAL)
+            self._leiste.wert(fenster, wert[0], wert[1])
 
     def closeEvent(self, event) -> None:  # noqa: N802 – Qt-Name
         for seite in self.seiten.values():

@@ -58,7 +58,7 @@ jobs:
       - name: "Rauchtest: still installieren"
         run: |
           $p = Start-Process "${{ steps.installer.outputs.pfad }}" -Wait -PassThru `
-            -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/CURRENTUSER', '/NORESTART', '/TASKS=pfad', "/LOG=$env:RUNNER_TEMP\install.log"
+            -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/CURRENTUSER', '/NORESTART', '/TASKS=pfad,kontextmenue', "/LOG=$env:RUNNER_TEMP\install.log"
           if ($p.ExitCode -ne 0) { Get-Content "$env:RUNNER_TEMP\install.log"; throw "Installation fehlgeschlagen ($($p.ExitCode))" }
           $app = "$env:LOCALAPPDATA\Programs\Miksan-Converter"
           foreach ($datei in 'Miksan-Converter.exe', 'miksan.exe', 'unins000.exe') {
@@ -128,6 +128,27 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Video -> MP3 fehlgeschlagen" }
           foreach ($datei in 'clip.mp4', 'ton.mp3') { if (-not (Test-Path "$test\$datei")) { throw "$datei fehlt" } }
 
+      - name: "Rauchtest: Explorer-Rechtsklick-Menü"
+        run: |
+          foreach ($endung in '.png', '.heic', '.pdf', '.mp4', '.mp3') {
+            $schluessel = "HKCU:\Software\Classes\SystemFileAssociations\$endung\shell\MiksanConverter\command"
+            if (-not (Test-Path $schluessel)) { throw "Rechtsklick-Eintrag fehlt für $endung" }
+            $befehl = (Get-ItemProperty $schluessel).'(default)'
+            if ($befehl -notlike "*Miksan-Converter.exe*%1*") { throw "Falscher Befehl für ${endung}: $befehl" }
+          }
+          if (-not (Test-Path "HKCU:\Software\Classes\Directory\shell\MiksanConverter\command")) { throw "Rechtsklick-Eintrag für Ordner fehlt" }
+
+      - name: "Startzeit der installierten App messen"
+        run: |
+          $bericht = "$env:RUNNER_TEMP\startzeit.txt"
+          foreach ($lauf in 1, 2, 3) {
+            $dauer = Measure-Command { Start-Process "$env:APP\Miksan-Converter.exe" -ArgumentList '--startzeit', $bericht -Wait }
+            $innen = if (Test-Path $bericht) { Get-Content $bericht } else { "kein Bericht" }
+            $zeile = "Lauf ${lauf}: Prozess gesamt $([math]::Round($dauer.TotalMilliseconds)) ms – $innen"
+            $zeile
+            $zeile >> $env:GITHUB_STEP_SUMMARY
+          }
+
       - name: "Rauchtest: Oberfläche (Selbsttest)"
         run: |
           $bericht = "$env:RUNNER_TEMP\selbsttest.txt"
@@ -145,6 +166,8 @@ jobs:
           if (Test-Path $env:APP) { Get-ChildItem -Recurse $env:APP | Select-Object -First 20; throw "Programmordner nicht entfernt" }
           $pfad = [Environment]::GetEnvironmentVariable('Path', 'User')
           if ($pfad -like "*$env:APP*") { throw "PATH-Eintrag nicht entfernt: $pfad" }
+          if (Test-Path "HKCU:\Software\Classes\SystemFileAssociations\.png\shell\MiksanConverter") { throw "Rechtsklick-Eintrag nicht entfernt" }
+          if (Test-Path "HKCU:\Software\Classes\Directory\shell\MiksanConverter") { throw "Rechtsklick-Eintrag für Ordner nicht entfernt" }
           # Still deinstalliert: Frage "Modelle löschen?" gilt als Nein, die Modelle bleiben
           if (-not (Test-Path "$env:LOCALAPPDATA\miksan-converter\modelle")) { throw "Modelle wurden ohne Nachfrage gelöscht" }
           if (Test-Path "$env:LOCALAPPDATA\miksan-converter\cache") { throw "Cache nicht entfernt" }

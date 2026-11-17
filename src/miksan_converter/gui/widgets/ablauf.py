@@ -93,6 +93,29 @@ class Ablaufleiste(QFrame):
         zeile.addWidget(self.knopf_oeffnen)
         layout.addLayout(zeile)
 
+        self.banner = QFrame()
+        design.eigenschaft(self.banner, "karte")
+        banner = QHBoxLayout(self.banner)
+        banner.setContentsMargins(design.abstand(2), design.abstand(1), design.abstand(1), 8)
+        self.banner_symbol = QLabel()
+        banner.addWidget(self.banner_symbol)
+        self.banner_text = QLabel()
+        self.banner_text.setWordWrap(True)
+        banner.addWidget(self.banner_text, 1)
+        self.banner_oeffnen = QPushButton(
+            design.icon("ordner_oeffnen", design.AUF_AKZENT), "Ordner öffnen"
+        )
+        design.eigenschaft(self.banner_oeffnen, "primaer")
+        self.banner_oeffnen.clicked.connect(self._ausgabe_oeffnen)
+        banner.addWidget(self.banner_oeffnen)
+        schliessen = design.eigenschaft(QPushButton(), "flach")
+        schliessen.setIcon(design.icon("schliessen", design.NEBENTEXT))
+        schliessen.setToolTip("Meldung schliessen")
+        schliessen.clicked.connect(lambda: self.banner.setVisible(False))
+        banner.addWidget(schliessen)
+        self.banner.setVisible(False)
+        layout.insertWidget(0, self.banner)
+
         self.meldungen = QListWidget()
         self.meldungen.setMaximumHeight(design.abstand(15))
         self.meldungen.setVisible(False)
@@ -122,6 +145,14 @@ class Ablaufleiste(QFrame):
     def _ausgabe_oeffnen(self) -> None:
         if self._offen is not None:
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(self._offen)))
+
+    def fertig_melden(self, text: str, fehler: bool) -> None:
+        """Meldung nach dem Lauf mit Knopf „Ordner öffnen“ (wenn es einen Ordner gibt)."""
+        symbol, farbe = ("warnung", design.WARNUNG) if fehler else ("haken", design.ERFOLG)
+        self.banner_symbol.setPixmap(design.icon(symbol, farbe).pixmap(20, 20))
+        self.banner_text.setText(text)
+        self.banner_oeffnen.setVisible(self.knopf_oeffnen.isEnabled())
+        self.banner.setVisible(True)
 
     def meldungen_setzen(self, zeilen: list[str]) -> None:
         self.meldungen.clear()

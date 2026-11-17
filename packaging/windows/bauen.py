@@ -107,6 +107,49 @@ def modell_holen() -> Path:
     return ziel
 
 
+def kontextmenue_endungen() -> list[str]:
+    """Alle Endungen, für die der Explorer „Mit Miksan-Converter öffnen“ zeigt."""
+    sys.path.insert(0, str(REPO / "src"))
+    from miksan_converter.formats import bekannte_bild_endungen
+    from miksan_converter.gui.werkzeuge import AUDIO_ENDUNGEN, PDF_ENDUNGEN, VIDEO_ENDUNGEN
+
+    alle = bekannte_bild_endungen() | PDF_ENDUNGEN | VIDEO_ENDUNGEN | AUDIO_ENDUNGEN
+    return sorted(endung.lower() for endung in alle if re.fullmatch(r"\.[a-z0-9]+", endung.lower()))
+
+
+def kontextmenue_schreiben() -> Path:
+    """Registry-Einträge für Inno Setup (Rechtsklick-Menü), nur mit der Aufgabe kontextmenue.
+
+    SystemFileAssociations ändert keine Standardprogramme; HKA = HKCU bzw. HKLM je nach
+    Installationsart. Beim Deinstallieren werden die Schlüssel entfernt.
+    """
+    befehl = '"""{app}\\{#AppExe}"" ""%1"""'
+    zeilen = ["; Von bauen.py erzeugt – nicht von Hand ändern", "[Registry]"]
+    schluessel = [
+        f"Software\\Classes\\SystemFileAssociations\\{e}" for e in kontextmenue_endungen()
+    ]
+    schluessel.append("Software\\Classes\\Directory")
+    for basis in schluessel:
+        verb = f"{basis}\\shell\\MiksanConverter"
+        gemeinsam = "Flags: uninsdeletekey; Tasks: kontextmenue"
+        zeilen.append(
+            f'Root: HKA; Subkey: "{verb}"; ValueType: string; ValueName: ""; '
+            f'ValueData: "{{cm:KontextEintrag}}"; {gemeinsam}'
+        )
+        zeilen.append(
+            f'Root: HKA; Subkey: "{verb}"; ValueType: string; ValueName: "Icon"; '
+            f'ValueData: """{{app}}\\{{#AppExe}}"",0"; {gemeinsam}'
+        )
+        zeilen.append(
+            f'Root: HKA; Subkey: "{verb}\\command"; ValueType: string; ValueName: ""; '
+            f"ValueData: {befehl}; {gemeinsam}"
+        )
+    BUILD.mkdir(exist_ok=True)
+    pfad = BUILD / "kontextmenue.iss"
+    pfad.write_text("\n".join(zeilen) + "\n", encoding="utf-8-sig")
+    return pfad
+
+
 def pyinstaller() -> None:
     befehl = [
         sys.executable,
@@ -146,6 +189,7 @@ def inno_setup(iscc: Path, version: str) -> Path:
         f"/DAppVersion={version}",
         f"/DQuelle={PROGRAMM}",
         f"/DRepo={REPO}",
+        f"/DKontext={kontextmenue_schreiben()}",
         f"/O{DIST}",
         str(HIER / "installer.iss"),
     ]
