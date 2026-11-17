@@ -20,6 +20,7 @@ class HintergrundSeite(BildSeite):
     aktion = logik.HINTERGRUND
     standard_format = "png"
     start_text = "Freistellen"
+    mit_vorschau = False  # Vorschau mit Maske folgt mit dem Ausbau des Werkzeugs
 
     def optionen_aufbauen(self) -> None:
         self.modell = QComboBox()

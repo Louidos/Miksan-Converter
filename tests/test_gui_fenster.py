@@ -389,3 +389,81 @@ def test_keine_verstreuten_farben():
         text = datei.read_text(encoding="utf-8")
         assert "setStyleSheet(" not in text, datei
         assert "color:" not in text, datei
+
+
+# --- Vorschau ------------------------------------------------------------------------------
+
+
+def test_vorschau_zeigt_ergebnis_und_aendert_nichts(qtbot, fenster, tmp_path: Path):
+    import time
+
+    ordner = tmp_path / "vorschau"
+    ordner.mkdir()
+    bild = Image.new("RGBA", (800, 400), (200, 30, 30, 255))
+    bild.paste((0, 0, 0, 0), (0, 0, 400, 400))  # linke Hälfte transparent
+    bild.save(ordner / "foto.png")
+    vorher = {p.name: p.stat().st_mtime_ns for p in ordner.iterdir()}
+
+    seite = fenster.werkzeug_oeffnen("bearbeiten", [str(ordner / "foto.png")])
+    qtbot.waitUntil(lambda: seite.vorschau.letzte is not None, timeout=10_000)
+    assert seite.vorschau.letzte.masse_vorher == (800, 400)
+
+    start = time.monotonic()
+    seite.max_seite.setValue(200)
+    qtbot.waitUntil(
+        lambda: (
+            seite.vorschau.letzte is not None and seite.vorschau.letzte.masse_nachher == (200, 100)
+        ),
+        timeout=5_000,
+    )
+    assert time.monotonic() - start < 2.0  # „innert ca. 1 Sekunde“ (CI-Puffer)
+    assert "800 × 400 → 200 × 100" in seite.vorschau.info.text()
+    assert "ca." in seite.vorschau.info.text()
+    assert seite.vorschau.ansicht.vorher is not None and seite.vorschau.ansicht.nachher is not None
+    assert {p.name: p.stat().st_mtime_ns for p in ordner.iterdir()} == vorher
+
+
+def test_vorschau_schieber_links_original_rechts_ergebnis(qtbot, fenster, tmp_path: Path):
+    from PySide6.QtGui import QColor
+
+    Image.new("RGBA", (100, 100), (0, 0, 255, 0)).save(tmp_path / "durchsichtig.png")
+    seite = fenster.werkzeug_oeffnen("umwandeln", [str(tmp_path / "durchsichtig.png")])
+    seite.format_waehlen("jpeg")
+    seite.farbe_setzen("#ff0000")  # Transparenz wird bei JPEG rot
+    qtbot.waitUntil(
+        lambda: seite.vorschau.letzte is not None and seite.vorschau.letzte.format == "jpeg",
+        timeout=10_000,
+    )
+    qtbot.waitUntil(
+        lambda: seite.vorschau.letzte.nachher.getpixel((50, 50))[0] > 200, timeout=5_000
+    )
+    ansicht = seite.vorschau.ansicht
+    ansicht.resize(400, 300)
+    ansicht.teilung = 0.5
+    bild = ansicht.grab().toImage()
+    links = QColor(bild.pixelColor(100, 150))
+    rechts = QColor(bild.pixelColor(300, 150))
+    assert rechts.red() > 200 and rechts.green() < 60  # Ergebnis: rot gefüllt
+    assert not (links.red() > 200 and links.green() < 60)  # Original: Schachbrett
+
+
+def test_vorschau_zoom_und_ziehen(qtbot):
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtGui import QPixmap
+
+    from miksan_converter.gui.widgets.vorschau import VorherNachher
+
+    ansicht = VorherNachher()
+    qtbot.addWidget(ansicht)
+    ansicht.resize(400, 300)
+    bild = QPixmap(100, 100)
+    ansicht.bilder_setzen(bild, bild)
+    qtbot.mousePress(ansicht, Qt.MouseButton.LeftButton, pos=QPoint(100, 150))
+    qtbot.mouseRelease(ansicht, Qt.MouseButton.LeftButton, pos=QPoint(100, 150))
+    assert ansicht.teilung == pytest.approx(0.25)
+    breite = ansicht.bild_rechteck().width()
+    ansicht.zoom = 2.0
+    assert ansicht.bild_rechteck().width() == pytest.approx(breite * 2)
+    ansicht.versatz = QPointF(10, 0)
+    ansicht.mouseDoubleClickEvent(None)
+    assert ansicht.zoom == 1.0 and ansicht.versatz == QPointF(0, 0)
