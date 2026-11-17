@@ -10,6 +10,7 @@ die Versionen folgen [Semantic Versioning](https://semver.org/lang/de/).
 ### Hinzugefügt
 
 - Vorschau mit Vorher/Nachher-Schieber und geschätzter Dateigrösse vor dem Umwandeln (#21)
+- Hintergrund entfernen mit Vorschau, neuem Hintergrund (Farbe, Bild, weichgezeichnet) und weicher Kante; im Windows-Installer ohne Internet nutzbar (#22)
 
 ### Geändert
 

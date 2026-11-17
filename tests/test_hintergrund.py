@@ -185,3 +185,117 @@ def test_echtes_modell_und_danach_offline(tmp_path: Path, monkeypatch):
     with Image.open(tmp_path / "zweiter.png") as ergebnis:
         assert ergebnis.getpixel((160, 160))[3] > 200
         assert ergebnis.getpixel((5, 5))[3] < 50
+
+
+# --- Neuer Hintergrund, weiche Kante, Modelle --------------------------------------------
+
+
+def test_neue_farbe_fuellt_hintergrund(rembg, portrait, tmp_path: Path):
+    ziel = tmp_path / "blau.png"
+    assert main(["bg", str(portrait), str(ziel), "--neue-farbe", "#1e6fe0"]) == 0
+    with Image.open(ziel) as bild:
+        assert bild.convert("RGBA").getpixel((5, 10)) == (30, 111, 224, 255)
+        r, g, b, a = bild.convert("RGBA").getpixel((35, 10))
+        assert abs(r - 200) <= 3 and abs(g - 180) <= 3 and abs(b - 160) <= 3 and a == 255
+
+
+def test_neues_bild_und_weichzeichnen(rembg, portrait, tmp_path: Path):
+    hinten = tmp_path / "strand.png"
+    Image.new("RGB", (300, 300), (10, 200, 10)).save(hinten)
+    ziel = tmp_path / "strand-ergebnis.png"
+    assert main(["bg", str(portrait), str(ziel), "--neues-bild", str(hinten)]) == 0
+    with Image.open(ziel) as bild:
+        assert bild.size == (40, 20)
+        assert bild.convert("RGBA").getpixel((5, 10)) == (10, 200, 10, 255)
+    weich = tmp_path / "weich.png"
+    assert main(["bg", str(portrait), str(weich), "--weichzeichnen"]) == 0
+    with Image.open(weich) as bild:
+        assert bild.convert("RGBA").getpixel((5, 10))[3] == 255
+
+
+def test_kante_weicher_macht_uebergang(rembg, portrait, tmp_path: Path):
+    hart, weich = tmp_path / "hart.png", tmp_path / "weich.png"
+    assert main(["bg", str(portrait), str(hart)]) == 0
+    assert main(["bg", str(portrait), str(weich), "--kante", "6"]) == 0
+    with Image.open(hart) as a, Image.open(weich) as b:
+        assert a.getpixel((19, 10))[3] == 0 and a.getpixel((20, 10))[3] == 255
+        assert 0 < b.getpixel((19, 10))[3] < 255
+
+
+def test_neue_optionen_bedienfehler(rembg, portrait, tmp_path: Path, capsys):
+    assert main(["bg", str(portrait), "--nur-maske", "--neue-farbe", "weiss"]) == 2
+    assert main(["bg", str(portrait), "--neue-farbe", "keinefarbe"]) == 2
+    with pytest.raises(SystemExit):
+        main(["bg", str(portrait), "--kante", "99"])
+    with pytest.raises(SystemExit):
+        main(["bg", str(portrait), "--neue-farbe", "weiss", "--weichzeichnen"])
+
+
+def test_ohne_neue_optionen_wie_bisher(rembg, portrait, tmp_path: Path):
+    from miksan_converter.hintergrund import freistellen
+
+    ziel = tmp_path / "a.png"
+    assert main(["bg", str(portrait), str(ziel)]) == 0
+    maske = Image.new("L", (40, 20), 0)
+    maske.paste(255, (20, 0, 40, 20))
+    with Image.open(portrait) as quelle, Image.open(ziel) as bild:
+        assert bild.tobytes() == freistellen(quelle, maske).tobytes()
+
+
+def test_zusammensetzen_arten():
+    from miksan_converter import hintergrund as hg
+
+    bild = Image.new("RGB", (10, 10), (255, 0, 0))
+    maske = Image.new("L", (10, 10), 0)
+    assert hg.zusammensetzen(bild, maske).getpixel((0, 0))[3] == 0
+    farbig = hg.zusammensetzen(bild, maske, neuer_hintergrund=hg.FARBE, farbe=(0, 0, 255))
+    assert farbig.getpixel((0, 0)) == (0, 0, 255, 255)
+    with pytest.raises(BedienFehler):
+        hg.zusammensetzen(bild, maske, neuer_hintergrund=hg.BILD)
+    with pytest.raises(BedienFehler):
+        hg.zusammensetzen(bild, maske, neuer_hintergrund="gibtsnicht")
+    assert hg.kante_weicher(maske, 0) is maske
+
+
+def test_modell_herunterladen_prueft_summe(monkeypatch, tmp_path: Path):
+    import hashlib
+    import io
+
+    from miksan_converter import hintergrund as hg
+
+    daten = b"onnx" * 1000
+    info = hg.ModellInfo("Test", 1, "", "https://beispiel.invalid/m.onnx", "falsch", "MIT")
+    monkeypatch.setitem(hg.MODELL_INFOS, "klein", info)
+    monkeypatch.setenv("MIKSAN_MODELL_ORDNER", str(tmp_path / "modelle"))
+
+    class Antwort(io.BytesIO):
+        headers = {"Content-Length": str(len(daten))}
+
+    monkeypatch.setattr(hg.urllib.request, "urlopen", lambda url, timeout: Antwort(daten))
+    with pytest.raises(MiksanFehler, match="beschädigt"):
+        hg.modell_herunterladen("klein")
+    assert not list((tmp_path / "modelle").iterdir())  # keine halbe Datei
+
+    md5 = hashlib.md5(daten, usedforsecurity=False).hexdigest()
+    monkeypatch.setitem(hg.MODELL_INFOS, "klein", hg.ModellInfo("T", 1, "", info.url, md5, "MIT"))
+    schritte = []
+    pfad = hg.modell_herunterladen("klein", lambda fertig, gesamt: schritte.append(fertig))
+    assert pfad == tmp_path / "modelle" / "u2netp.onnx" and pfad.read_bytes() == daten
+    assert schritte[-1] == len(daten)
+    assert hg.modell_vorhanden("klein")
+
+
+def test_mitgeliefertes_modell_wird_genutzt(rembg, monkeypatch, tmp_path: Path):
+    from miksan_converter import hintergrund as hg
+
+    paket = tmp_path / "paket"
+    (paket / "miksan_modelle").mkdir(parents=True)
+    (paket / "miksan_modelle" / "u2netp.onnx").write_bytes(b"modell")
+    monkeypatch.setattr(sys, "_MEIPASS", str(paket), raising=False)
+    monkeypatch.setenv("MIKSAN_KEIN_DOWNLOAD", "1")
+    assert hg.modell_vorhanden("klein")
+    assert not hg.modell_vorhanden("genau")
+    hg.sitzung_erstellen("klein")
+    assert (hg.modell_ordner() / "u2netp.onnx").read_bytes() == b"modell"
+    with pytest.raises(MiksanFehler, match="MIKSAN_KEIN_DOWNLOAD"):
+        hg.sitzung_erstellen("genau")

@@ -170,3 +170,107 @@ def vorschau_berechnen(
         format=ziel.name,
         hinweis=hinweis,
     )
+
+
+# --- Hintergrund entfernen: Maske einmal rechnen, Hintergrund sofort wechseln -------------
+
+
+class MaskenSpeicher:
+    """Merkt sich Masken (je Datei, Modell, Änderungszeit) und Modell-Sitzungen.
+
+    So muss beim Wechsel des Hintergrunds, der Farbe oder der Kante nicht neu gerechnet
+    werden – nur beim Wechsel der Datei oder des Modells.
+    """
+
+    def __init__(self, grenze: int = 8) -> None:
+        self.grenze = grenze
+        self.masken: dict[tuple, Image.Image] = {}
+        self.sitzungen: dict[str, object] = {}
+        self.ersatz: dict[tuple, Image.Image] = {}
+        self.berechnet = 0  # wie oft das Modell gerechnet hat (für Tests)
+
+    def sitzung(self, modell: str):
+        from ..hintergrund import sitzung_erstellen
+
+        if modell not in self.sitzungen:
+            self.sitzungen[modell] = sitzung_erstellen(modell)
+        return self.sitzungen[modell]
+
+    def maske(self, pfad: Path, modell: str, bild: Image.Image) -> Image.Image:
+        from ..hintergrund import maske_berechnen
+
+        schluessel = (str(pfad), pfad.stat().st_mtime_ns, modell, bild.size)
+        if schluessel not in self.masken:
+            if len(self.masken) >= self.grenze:
+                self.masken.pop(next(iter(self.masken)))
+            self.masken[schluessel] = maske_berechnen(bild, self.sitzung(modell))
+            self.berechnet += 1
+        return self.masken[schluessel]
+
+    def ersatz_bild(self, pfad: str) -> Image.Image:
+        from ..hintergrund import ersatz_laden
+
+        datei = Path(pfad)
+        schluessel = (str(datei), datei.stat().st_mtime_ns)
+        if schluessel not in self.ersatz:
+            self.ersatz = {schluessel: ersatz_laden(datei)}
+        return self.ersatz[schluessel]
+
+
+def vorschau_hintergrund(
+    pfad: str | Path,
+    einstellungen: logik.Einstellungen,
+    speicher: MaskenSpeicher,
+    *,
+    kante: int = KANTE,
+) -> Vorschau:
+    """Vorschau „Hintergrund entfernen“: freigestellt bzw. auf dem neuen Hintergrund."""
+    from ..hintergrund import (
+        BILD,
+        kante_weicher,
+        modell_vorhanden,
+        zusammensetzen,
+    )
+
+    pfad = Path(pfad)
+    if not modell_vorhanden(einstellungen.modell):
+        raise MiksanFehler(
+            f"Das Modell '{einstellungen.modell}' ist noch nicht geladen – "
+            "bitte zuerst „Herunterladen“ drücken."
+        )
+    ziel = ziel_format_fuer(pfad, einstellungen)
+    quelle = laden(pfad)
+    frame = quelle.frames[0]
+    faktor = min(1.0, kante / max(frame.size))
+    klein = frame
+    if faktor < 1.0:
+        groesse = (max(1, round(frame.width * faktor)), max(1, round(frame.height * faktor)))
+        klein = _fuer_bearbeitung(frame).resize(groesse, Image.Resampling.LANCZOS)
+    maske = speicher.maske(pfad, einstellungen.modell, klein)
+    ersatz = None
+    if einstellungen.neuer_hintergrund == BILD and einstellungen.ersatz_bild.strip():
+        ersatz = speicher.ersatz_bild(einstellungen.ersatz_bild)
+    ergebnis = zusammensetzen(
+        klein,
+        kante_weicher(maske, einstellungen.kante * faktor),
+        neuer_hintergrund=einstellungen.neuer_hintergrund,
+        farbe=farbe_parsen(einstellungen.ersatz_farbe),
+        ersatz=ersatz,
+        unschaerfe=max(1, round(einstellungen.unschaerfe * faktor)),
+    )
+    bild = dataclasses.replace(quelle, frames=[ergebnis], dauern=[0], ico_bilder=[])
+    daten = kodieren(bild, ziel, hintergrund=farbe_parsen(einstellungen.hintergrundfarbe))
+    verhaeltnis = (frame.width * frame.height) / max(1, ergebnis.width * ergebnis.height)
+    try:
+        groesse_vorher = pfad.stat().st_size
+    except OSError:
+        groesse_vorher = None
+    return Vorschau(
+        vorher=klein.convert("RGBA"),
+        nachher=_lesen(daten, ergebnis),
+        masse_vorher=frame.size,
+        masse_nachher=frame.size,
+        groesse_vorher=groesse_vorher,
+        groesse_nachher=round(len(daten) * verhaeltnis),
+        format=ziel.name,
+    )

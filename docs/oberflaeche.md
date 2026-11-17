@@ -74,12 +74,13 @@ erhalten, soweit die Dateien zum neuen Werkzeug passen.
   (Standard „wie Original“, es entsteht `<name>-bearbeitet` neben dem Original) und die
   Hintergrundfarbe. Die Regeln sind dieselben wie bei der Kommandozeile, siehe
   [bearbeiten.md](bearbeiten.md).
-- **Hintergrund entfernen** – KI-Modell und Zielformat (Standard PNG, es entsteht
-  `<name>-freigestellt.png`), siehe [hintergrund.md](hintergrund.md).
+- **Hintergrund entfernen** – KI-Modell, neuer Hintergrund, Kante weicher und Zielformat
+  (Standard PNG, es entsteht `<name>-freigestellt.png`), siehe unten und
+  [hintergrund.md](hintergrund.md).
 
 ### Vorschau
 
-Auf „Umwandeln“ und „Verkleinern & Bearbeiten“ zeigt die **Vorschau** unter der Dateiliste das
+Auf allen Bild-Werkzeugen zeigt die **Vorschau** unter der Dateiliste das
 markierte Bild (bei einem Ordner das erste Bild darin) mit den aktuellen Einstellungen –
 Format, Qualität, Zielgrösse, maximale Grösse, Drehen, Spiegeln, Hintergrundfarbe. Sie wird
 etwa 0,3 Sekunden nach der letzten Änderung im Hintergrund neu berechnet, das Fenster bleibt
@@ -123,11 +124,14 @@ zeigt die Ergebnisse im Dateimanager.
 | Strg+Enter | starten |
 | Esc | abbrechen |
 
-### Hintergrund entfernen zum ersten Mal
+### Hintergrund entfernen
 
-Beim ersten Gebrauch eines Modells fragt das Fenster nach, bevor das Modell **einmalig aus dem
-Internet** geladen wird (je nach Modell etwa 5 bis 200 MB). Es wird im üblichen Modellordner
-gespeichert (siehe [hintergrund.md](hintergrund.md)) und danach offline genutzt.
+Die Modellauswahl zeigt Name, Zweck und Grösse und ob das Modell schon geladen ist. Fehlt es,
+lädt der Knopf **Herunterladen** es einmalig mit Fortschrittsbalken; erst danach lässt sich
+freistellen – es gibt keine Abfrage mitten im Lauf. Im Windows-Installer ist das Modell
+„klein“ schon enthalten. Neuer Hintergrund (Transparent, Farbe, eigenes Bild,
+weichgezeichnetes Original) und „Kante weicher“ wirken sofort in der Vorschau, siehe
+[hintergrund.md](hintergrund.md).
 
 ## Einstellungen merken
 

@@ -266,21 +266,74 @@ def test_fehlerhafte_eingabe_zeigt_meldung(fenster, bilder: Path, monkeypatch):
     assert "ungültig" in meldungen[0]
 
 
-def test_hintergrund_fragt_vor_dem_download(fenster, bilder: Path, monkeypatch, tmp_path):
+@pytest.fixture
+def falsches_rembg(monkeypatch, tmp_path: Path):
+    import sys
+
+    from .test_hintergrund import _falsches_rembg
+
     monkeypatch.setattr(werkzeuge, "extra_installiert", lambda extra: True)
+    monkeypatch.setitem(sys.modules, "rembg", _falsches_rembg())
     monkeypatch.setenv("MIKSAN_MODELL_ORDNER", str(tmp_path / "modelle"))
-    gefragt = []
+    return tmp_path / "modelle"
 
+
+def test_hintergrund_ohne_modell_startet_nicht(fenster, bilder: Path, monkeypatch, falsches_rembg):
     seite = fenster.werkzeug_oeffnen("hintergrund", [bilder])
-
-    def ablehnen(modell):
-        gefragt.append(modell)
-        return False
-
-    monkeypatch.setattr(seite, "_modell_download_bestaetigen", ablehnen)
+    assert seite.knopf_laden.isVisibleTo(seite) and "5 MB" in seite.knopf_laden.text()
+    meldungen = []
+    monkeypatch.setattr(seite, "_melden", lambda titel, text: meldungen.append(text))
     seite.starten()
-    assert gefragt == ["klein"]
     assert not seite.laeuft()
+    assert "Herunterladen" in meldungen[0]
+
+
+def test_hintergrund_download_mit_fortschritt(qtbot, fenster, monkeypatch, falsches_rembg):
+    from miksan_converter.gui.seiten import hintergrund as seite_hg
+
+    def herunterladen(modell, fortschritt, abbrechen):
+        falsches_rembg.mkdir(parents=True, exist_ok=True)
+        fortschritt(50, 100)
+        (falsches_rembg / "u2netp.onnx").write_bytes(b"x")
+
+    monkeypatch.setattr(seite_hg, "modell_herunterladen", herunterladen)
+    seite = fenster.werkzeug_oeffnen("hintergrund")
+    seite.modell_laden()
+    qtbot.waitUntil(lambda: "geladen" in seite.modell_status.text() and seite.modell.isEnabled())
+    assert seite.modell_status.text() == "✓ geladen"
+    assert not seite.knopf_laden.isVisibleTo(seite)
+
+
+def test_hintergrund_vorschau_und_neuer_hintergrund(qtbot, fenster, tmp_path, falsches_rembg):
+    falsches_rembg.mkdir(parents=True)
+    (falsches_rembg / "u2netp.onnx").write_bytes(b"x")
+    Image.new("RGB", (80, 40), (200, 50, 50)).save(tmp_path / "motiv.png")
+    seite = fenster.werkzeug_oeffnen("hintergrund", [str(tmp_path / "motiv.png")])
+    qtbot.waitUntil(lambda: seite.vorschau.letzte is not None, timeout=10_000)
+    nachher = seite.vorschau.letzte.nachher
+    assert nachher.getpixel((5, 20))[3] == 0 and nachher.getpixel((75, 20))[3] == 255
+    assert seite.speicher.berechnet == 1
+
+    seite.neuer_hintergrund.setCurrentIndex(seite.neuer_hintergrund.findData("farbe"))
+    seite.ersatz_farbe_setzen("#000000")
+    qtbot.waitUntil(
+        lambda: (
+            seite.vorschau.letzte is not None
+            and seite.vorschau.letzte.nachher.getpixel((5, 20)) == (0, 0, 0, 255)
+        ),
+        timeout=5_000,
+    )
+    assert seite.speicher.berechnet == 1  # Maske nicht neu gerechnet
+    assert seite.farb_zeile.isVisibleTo(seite) and not seite.bild_zeile.isVisibleTo(seite)
+
+    seite.ablauf.ausgabe_ordner.setText(str(tmp_path / "aus"))
+    seite.kante.setValue(4)
+    seite.starten()
+    qtbot.waitUntil(
+        lambda: seite.letztes_ergebnis is not None and not seite.laeuft(), timeout=10_000
+    )
+    with Image.open(tmp_path / "aus" / "motiv.png") as bild:
+        assert bild.convert("RGBA").getpixel((2, 20)) == (0, 0, 0, 255)
 
 
 def test_einstellungen_seite_loescht_modelle(fenster, tmp_path: Path, monkeypatch):

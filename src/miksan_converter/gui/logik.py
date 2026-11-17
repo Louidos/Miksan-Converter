@@ -23,14 +23,17 @@ from ..formats import (
     pil_kann_schreiben,
 )
 from ..hintergrund import (
+    BILD,
     MODELLE,
     STANDARD_MODELL,
+    STANDARD_UNSCHAERFE,
+    TRANSPARENT,
+    ersatz_laden,
     hintergrund_entfernen,
-    modell_name,
-    modell_ordner,
     sitzung_erstellen,
     standard_ausgabe,
 )
+from ..hintergrund import modell_vorhanden as _modell_vorhanden
 from ..stapel import (
     Auftrag,
     Datei,
@@ -75,6 +78,12 @@ class Einstellungen:
     metadaten_entfernen: bool = False
     hintergrundfarbe: str = "#ffffff"
     modell: str = STANDARD_MODELL
+    # Hintergrund entfernen: weicher Rand und neuer Hintergrund
+    kante: float = 0
+    neuer_hintergrund: str = TRANSPARENT
+    ersatz_farbe: str = "#ffffff"
+    ersatz_bild: str = ""
+    unschaerfe: int = STANDARD_UNSCHAERFE
 
 
 @dataclass(frozen=True)
@@ -143,16 +152,8 @@ def modelle_fuer_auswahl() -> list[str]:
 
 
 def modell_vorhanden(modell: str) -> bool:
-    """Liegt das Modell schon lokal? Sonst wird es beim ersten Gebrauch heruntergeladen.
-
-    Neuere rembg-Versionen legen Modelle unter ``models/<name>/`` ab, ältere direkt im Ordner.
-    """
-    ordner = modell_ordner()
-    name = modell_name(modell)
-    if (ordner / f"{name}.onnx").is_file():
-        return True
-    unterordner = ordner / "models" / name
-    return unterordner.is_dir() and any(unterordner.glob("*.onnx"))
+    """Liegt das Modell schon lokal (oder mitgeliefert)?"""
+    return _modell_vorhanden(modell)
 
 
 def bearbeitung_aus(einstellungen: Einstellungen) -> Bearbeitung:
@@ -171,6 +172,9 @@ def bearbeitung_aus(einstellungen: Einstellungen) -> Bearbeitung:
 def einstellungen_pruefen(einstellungen: Einstellungen) -> None:
     """Prüft die Einstellungen vor dem Start; wirft ``BedienFehler`` mit verständlicher Meldung."""
     farbe_parsen(einstellungen.hintergrundfarbe)
+    farbe_parsen(einstellungen.ersatz_farbe)
+    if einstellungen.neuer_hintergrund == BILD and not einstellungen.ersatz_bild.strip():
+        raise BedienFehler("Bitte ein Bild für den neuen Hintergrund wählen.")
     bearbeitung = bearbeitung_aus(einstellungen)
     if einstellungen.aktion not in AKTIONEN:
         raise BedienFehler(f"Unbekannte Aktion '{einstellungen.aktion}'.")
@@ -238,8 +242,17 @@ def arbeit_fuer(einstellungen: Einstellungen) -> tuple[Callable[[Auftrag], list[
     to = einstellungen.ziel_format or None
     sitzung = []
 
+    hg_optionen: dict = {
+        "kante": einstellungen.kante,
+        "neuer_hintergrund": einstellungen.neuer_hintergrund,
+        "ersatz_farbe": einstellungen.ersatz_farbe,
+        "unschaerfe": einstellungen.unschaerfe,
+    }
+
     def vorbereiten() -> None:
         if einstellungen.aktion == HINTERGRUND:
+            if einstellungen.neuer_hintergrund == BILD:
+                hg_optionen["ersatz_bild"] = ersatz_laden(einstellungen.ersatz_bild)
             sitzung.append(sitzung_erstellen(einstellungen.modell))
 
     def arbeit(auftrag: Auftrag) -> list[str]:
@@ -255,6 +268,7 @@ def arbeit_fuer(einstellungen: Einstellungen) -> tuple[Callable[[Auftrag], list[
                 to=to,
                 modell=einstellungen.modell,
                 sitzung=sitzung[0],
+                **hg_optionen,
                 **optionen,
             ).hinweise
         return funktion(

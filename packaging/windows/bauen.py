@@ -13,12 +13,14 @@ Mit ``--nur-programm`` wird nur der Programmordner ``build/programm/Miksan-Conve
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import re
 import shutil
 import subprocess
 import sys
 import tomllib
+import urllib.request
 from pathlib import Path
 
 HIER = Path(__file__).resolve().parent
@@ -26,6 +28,11 @@ REPO = HIER.parent.parent
 BUILD = REPO / "build"
 DIST = REPO / "dist"
 PROGRAMM = BUILD / "programm" / "Miksan-Converter"
+MODELLE = BUILD / "modelle"  # wird von miksan.spec als miksan_modelle/ eingepackt
+
+# Standardmodell "klein" (u2netp, Apache-2.0) – damit Hintergrund entfernen offline geht
+MODELL_URL = "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx"
+MODELL_MD5 = "8e83ca70e441ab06c318d82300c84806"
 
 _ISCC_ORTE = (
     Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Inno Setup 6",
@@ -81,6 +88,25 @@ def version_info_schreiben(version: str) -> Path:
     return pfad
 
 
+def modell_holen() -> Path:
+    """Lädt das kleine Modell einmal nach build/modelle/ und prüft die Prüfsumme."""
+    ziel = MODELLE / "u2netp.onnx"
+
+    def stimmt() -> bool:
+        return ziel.is_file() and hashlib.md5(ziel.read_bytes()).hexdigest() == MODELL_MD5
+
+    if not stimmt():
+        MODELLE.mkdir(parents=True, exist_ok=True)
+        print(f"Lade {MODELL_URL}", flush=True)
+        urllib.request.urlretrieve(MODELL_URL, ziel)
+        if not stimmt():
+            ziel.unlink(missing_ok=True)
+            sys.exit("Prüfsumme des Modells u2netp.onnx stimmt nicht.")
+    for datei in (HIER / "lizenzen").glob("*.txt"):
+        shutil.copyfile(datei, MODELLE / datei.name)
+    return ziel
+
+
 def pyinstaller() -> None:
     befehl = [
         sys.executable,
@@ -134,11 +160,18 @@ def main() -> int:
         "--nur-programm", action="store_true", help="nur PyInstaller, kein Installer"
     )
     parser.add_argument("--iscc", help="Pfad zu ISCC.exe (Inno Setup)")
+    parser.add_argument(
+        "--ohne-modell", action="store_true", help="das kleine KI-Modell nicht mitliefern"
+    )
     args = parser.parse_args()
 
     version = version_lesen()
     print(f"Miksan-Converter {version}")
     version_info_schreiben(version)
+    if args.ohne_modell:
+        shutil.rmtree(MODELLE, ignore_errors=True)
+    else:
+        print(f"Mitgeliefertes Modell: {modell_holen()}")
     iscc = None if args.nur_programm else iscc_finden(args.iscc)
     pyinstaller()
     print(f"Programmordner: {PROGRAMM}")
