@@ -100,6 +100,7 @@ class WerkzeugSeite(QWidget):
         layout.addWidget(self.ablauf)
 
         self.einstellungen_laden()
+        self.aufbau_fertig()
         self._knoepfe_aktualisieren()
 
     # --- Aufbau ---------------------------------------------------------------------
@@ -171,6 +172,9 @@ class WerkzeugSeite(QWidget):
 
     def optionen_aufbauen(self) -> None:
         """Unterklassen: Felder in ``self.formular`` bzw. ``self.formular_erweitert``."""
+
+    def aufbau_fertig(self) -> None:
+        """Unterklassen: nach Aufbau und Laden der Einstellungen (z. B. Vorschau einbauen)."""
 
     def hinweis_label(self) -> QLabel:
         label = design.eigenschaft(QLabel(), "hinweis")

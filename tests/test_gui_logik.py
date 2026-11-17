@@ -269,3 +269,48 @@ def test_status_pro_eintrag(ordner: Path):
     )
     assert dateiinfo.status_fuer(ordner, ergebnis) == (dateiinfo.FEHLER, "1 ok, 1 Fehler")
     assert dateiinfo.status_fuer(ordner / "unter" / "c.png", ergebnis) == ("", "")
+
+
+# --- Vorschau (ohne Qt) --------------------------------------------------------------------
+
+
+def test_vorschau_rechnet_verkleinert_und_schaetzt_groesse(tmp_path: Path):
+    from miksan_converter.gui import vorschaubild
+
+    rauschen = Image.effect_noise((3000, 2000), 60).convert("RGB")
+    rauschen.save(tmp_path / "gross.png")
+    vorher = sorted(tmp_path.iterdir())
+    einstellungen = Einstellungen(aktion=logik.UMWANDELN, ziel_format="jpeg", qualitaet=80)
+    vorschau = vorschaubild.vorschau_berechnen(tmp_path / "gross.png", einstellungen)
+    assert max(vorschau.nachher.size) <= vorschaubild.KANTE
+    assert vorschau.masse_vorher == vorschau.masse_nachher == (3000, 2000)
+    assert sorted(tmp_path.iterdir()) == vorher  # keine Datei geschrieben
+
+    echt = tmp_path / "aus.jpg"
+    logik.umwandeln(tmp_path / "gross.png", echt, to="jpeg", bearbeitung=Bearbeitung(qualitaet=80))
+    echte_groesse = echt.stat().st_size
+    assert 0.5 * echte_groesse <= vorschau.groesse_nachher <= 2 * echte_groesse
+    assert vorschau.text().startswith("3000 × 2000 · JPEG ca. ")
+
+
+def test_vorschau_masse_mit_drehen_und_zielgroesse(tmp_path: Path):
+    from miksan_converter.gui import vorschaubild
+
+    Image.effect_noise((400, 200), 40).convert("RGB").save(tmp_path / "quer.png")
+    e = Einstellungen(
+        aktion=logik.BEARBEITEN, ziel_format="jpeg", drehen=90, max_seite=100, zielgroesse="3KB"
+    )
+    vorschau = vorschaubild.vorschau_berechnen(tmp_path / "quer.png", e)
+    assert vorschau.masse_nachher == (50, 100)
+    assert vorschau.nachher.size == (50, 100) and vorschau.vorher.size == (200, 400)
+    assert vorschau.groesse_nachher <= 3000
+
+
+def test_vorschau_bei_fehler_mit_meldung(tmp_path: Path):
+    from miksan_converter.gui import vorschaubild
+
+    Image.new("RGB", (40, 30)).save(tmp_path / "a.png")
+    e = Einstellungen(aktion=logik.BEARBEITEN, ziel_format="png", zielgroesse="1KB")
+    vorschau = vorschaubild.vorschau_berechnen(tmp_path / "a.png", e)
+    assert "verlustbehaftet" in vorschau.hinweis
+    assert vorschau.groesse_nachher is None

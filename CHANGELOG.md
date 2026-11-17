@@ -7,6 +7,10 @@ die Versionen folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Hinzugefügt
+
+- Vorschau mit Vorher/Nachher-Schieber und geschätzter Dateigrösse vor dem Umwandeln (#21)
+
 ### Geändert
 
 - Die Oberfläche hat ein neues, helles Design in Blau und Weiss mit eigenen Icons (#19)

@@ -17,9 +17,10 @@ from PySide6.QtWidgets import (
     QSpinBox,
 )
 
-from ...stapel import StapelErgebnis
-from .. import logik
+from ...stapel import StapelErgebnis, dateien_sammeln
+from .. import logik, vorschaubild
 from ..arbeiter import plan_aufgabe
+from ..widgets.vorschau import VorschauBereich
 from .basis import WerkzeugSeite
 
 
@@ -27,6 +28,63 @@ class BildSeite(WerkzeugSeite):
     aktion = logik.UMWANDELN
     standard_format = "jpeg"
     wie_original = False
+    mit_vorschau = True
+    vorschau: VorschauBereich | None = None
+
+    # --- Vorschau ---------------------------------------------------------------------
+
+    def aufbau_fertig(self) -> None:
+        if not self.mit_vorschau:
+            return
+        self.vorschau = VorschauBereich()
+        self.links.addWidget(self.vorschau)
+        self.links.setStretchFactor(0, 2)
+        self.links.setStretchFactor(1, 3)
+        self.liste.currentItemChanged.connect(self.vorschau_aktualisieren)
+        self.liste.geaendert.connect(self._erste_waehlen)
+        for feld in self.optionen.findChildren(QComboBox):
+            feld.currentIndexChanged.connect(self.vorschau_aktualisieren)
+        for feld in self.optionen.findChildren(QSpinBox):
+            feld.valueChanged.connect(self.vorschau_aktualisieren)
+        for feld in self.optionen.findChildren(QLineEdit):
+            feld.textChanged.connect(self.vorschau_aktualisieren)
+        for feld in self.optionen.findChildren(QCheckBox):
+            feld.toggled.connect(self.vorschau_aktualisieren)
+
+    def _erste_waehlen(self) -> None:
+        if self.liste.count() and self.liste.currentRow() < 0:
+            self.liste.setCurrentRow(0)
+        elif not self.liste.count():
+            self.vorschau_aktualisieren()
+
+    def vorschau_datei(self) -> str | None:
+        """Gewählte Datei; bei einem Ordner das erste Bild darin."""
+        pfad = self.liste.ausgewaehlter_pfad()
+        if pfad is None and self.liste.count():
+            pfad = self.pfade()[0]
+        if pfad is None:
+            return None
+        try:
+            dateien, _ = dateien_sammeln([pfad], rekursiv=self.rekursiv())
+        except Exception:  # Ordner nicht lesbar o. ä.
+            return None
+        return str(dateien[0].pfad) if dateien else None
+
+    def vorschau_rechnung(self, pfad: str):
+        einstellungen = self.einstellungen()
+        return lambda: vorschaubild.vorschau_berechnen(pfad, einstellungen)
+
+    def schliessen(self) -> None:
+        if self.vorschau is not None:
+            self.vorschau.anstossen(None)
+            self.vorschau.warten(5000)
+        super().schliessen()
+
+    def vorschau_aktualisieren(self, *_args) -> None:
+        if self.vorschau is None:
+            return
+        pfad = self.vorschau_datei()
+        self.vorschau.anstossen(self.vorschau_rechnung(pfad) if pfad else None)
 
     # --- Bausteine für die Unterklassen ---------------------------------------------------
 
@@ -112,6 +170,7 @@ class BildSeite(WerkzeugSeite):
         bild.fill(QColor(self._farbe))
         self.knopf_farbe.setIcon(QIcon(bild))
         self.knopf_farbe.setText(self._farbe)
+        self.vorschau_aktualisieren()
 
     def _farbe_waehlen(self) -> None:
         farbe = QColorDialog.getColor(QColor(self._farbe), self, "Hintergrundfarbe wählen")

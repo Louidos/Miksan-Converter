@@ -77,6 +77,27 @@ erhalten, soweit die Dateien zum neuen Werkzeug passen.
 - **Hintergrund entfernen** – KI-Modell und Zielformat (Standard PNG, es entsteht
   `<name>-freigestellt.png`), siehe [hintergrund.md](hintergrund.md).
 
+### Vorschau
+
+Auf „Umwandeln“ und „Verkleinern & Bearbeiten“ zeigt die **Vorschau** unter der Dateiliste das
+markierte Bild (bei einem Ordner das erste Bild darin) mit den aktuellen Einstellungen –
+Format, Qualität, Zielgrösse, maximale Grösse, Drehen, Spiegeln, Hintergrundfarbe. Sie wird
+etwa 0,3 Sekunden nach der letzten Änderung im Hintergrund neu berechnet, das Fenster bleibt
+bedienbar.
+
+- **Vorher/Nachher-Schieber**: links der Linie das Original, rechts das Ergebnis. Linie mit der
+  Maus ziehen oder mit den Pfeiltasten ← → verschieben.
+- **Zoom** mit dem Mausrad, gezoomt **verschieben** durch Ziehen neben der Linie,
+  **Doppelklick** setzt zurück.
+- Transparente Stellen erscheinen als **Schachbrettmuster** – so sieht man z. B., dass JPEG sie
+  mit der Hintergrundfarbe füllt.
+- Darunter: **Masse vorher → nachher** und die **geschätzte Dateigrösse** („ca.“).
+
+Gerechnet wird mit denselben Funktionen wie beim echten Lauf, aber auf einer verkleinerten
+Kopie (längste Seite höchstens 1600 Pixel). Die Dateigrösse wird aus der echten Kodierung
+dieser Kopie auf die volle Grösse hochgerechnet und ist deshalb eine Schätzung. Die Vorschau
+schreibt nie eine Datei.
+
 Der Hauptknopf startet die Verarbeitung im Hintergrund (parallel), das Fenster bleibt
 bedienbar. **Abbrechen** startet keine weiteren Dateien mehr; Dateien, die gerade laufen,
 werden noch fertig. Danach steht die Zusammenfassung unter dem Balken (z. B. „Fertig: 12 ok,
