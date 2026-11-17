@@ -63,7 +63,7 @@ def _fenster_pruefen(zeilen: list[str]) -> bool:
     from PySide6.QtCore import QSettings
     from PySide6.QtWidgets import QApplication
 
-    from .app import Hauptfenster
+    from .fenster import Hauptfenster
 
     app = QApplication.instance() or QApplication(sys.argv[:1])
     with tempfile.TemporaryDirectory(prefix="miksan-selbsttest-") as ordner:
@@ -72,20 +72,20 @@ def _fenster_pruefen(zeilen: list[str]) -> bool:
         settings = QSettings(str(ordner / "einstellungen.ini"), QSettings.Format.IniFormat)
         fenster = Hauptfenster(settings)
         fenster.show()
-        fenster.pfade_hinzufuegen([ordner / "test.png"])
-        fenster.format_waehlen("heif")
-        fenster.ausgabe_ordner.setText(str(ordner / "aus"))
-        fenster.starten()
+        seite = fenster.werkzeug_oeffnen("umwandeln", [str(ordner / "test.png")])
+        seite.format_waehlen("heif")
+        seite.ablauf.ausgabe_ordner.setText(str(ordner / "aus"))
+        seite.starten()
         ende = time.monotonic() + 60
-        while fenster.letztes_ergebnis is None and time.monotonic() < ende:
+        while seite.letztes_ergebnis is None and time.monotonic() < ende:
             app.processEvents()
             time.sleep(0.02)
-        ergebnis = fenster.letztes_ergebnis
+        ergebnis = seite.letztes_ergebnis
         fenster.close()
         ok = ergebnis is not None and len(ergebnis.ok) == 1 and not ergebnis.fehler
         ziel = ordner / "aus" / "test.heic"
         ok = ok and ziel.is_file()
-        zeilen.append(f"{'ok' if ok else 'FEHLER':<8}Fenster: {fenster.status.text()}")
+        zeilen.append(f"{'ok' if ok else 'FEHLER':<8}Fenster: {seite.status.text()}")
     return ok
 
 

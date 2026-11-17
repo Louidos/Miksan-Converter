@@ -188,3 +188,84 @@ def test_hintergrund_nutzt_eine_sitzung(ordner: Path, tmp_path: Path, monkeypatc
     assert aufrufe == ["isnet-general-use"]
     with Image.open(ordner / "a-freigestellt.png") as bild:
         assert bild.mode == "RGBA" and bild.getpixel((0, 0))[3] == 0
+
+
+# --- Werkzeug-Registrierung und Dateiliste (ohne Qt) ---------------------------------------
+
+
+def test_werkzeuge_nach_bereich_und_art(tmp_path: Path):
+    from miksan_converter.gui import werkzeuge
+
+    bereiche = dict(werkzeuge.nach_bereich())
+    assert [w.name for w in bereiche["Bilder"]] == ["umwandeln", "bearbeiten", "hintergrund"]
+    assert werkzeuge.datei_art(tmp_path) == werkzeuge.ORDNER
+    assert werkzeuge.datei_art("foto.HEIC") == werkzeuge.BILD
+    assert werkzeuge.datei_art("dok.pdf") == werkzeuge.PDF
+    assert werkzeuge.datei_art("film.mov") == werkzeuge.VIDEO
+    assert werkzeuge.datei_art("lied.mp3") == werkzeuge.AUDIO
+    assert werkzeuge.datei_art("notiz.txt") is None
+    passende = dict(
+        (w.name, n) for w, n in werkzeuge.passende_werkzeuge(["a.png", "b.jpg", "c.txt"])
+    )
+    assert passende == {"umwandeln": 2, "bearbeiten": 2, "hintergrund": 2}
+    assert werkzeuge.passende_werkzeuge(["c.txt"]) == []
+
+
+def test_werkzeug_ohne_extra_hat_hinweis(monkeypatch):
+    from miksan_converter.gui import werkzeuge
+
+    monkeypatch.setattr(werkzeuge, "extra_installiert", lambda extra: False)
+    eintrag = werkzeuge.werkzeug("hintergrund")
+    assert not eintrag.verfuegbar()
+    assert "[ki]" in eintrag.hinweis()
+    assert werkzeuge.werkzeug("umwandeln").hinweis() == ""
+
+
+def test_datei_info_und_groesse(ordner: Path):
+    from miksan_converter.gui import dateiinfo
+
+    info = dateiinfo.datei_info(ordner / "a.png")
+    assert (info.format, info.breite, info.hoehe) == ("PNG", 40, 30)
+    assert info.text().startswith("PNG · 40 × 30 · ")
+    assert dateiinfo.datei_info(ordner).text() == "Ordner · 2 Dateien"
+    assert dateiinfo.groesse_text(999) == "999 B"
+    assert dateiinfo.groesse_text(1_500) == "1.5 KB"
+    assert dateiinfo.groesse_text(2_300_000) == "2.3 MB"
+    assert dateiinfo.groesse_text(250_000) == "250 KB"
+    kaputt = ordner / "kaputt.jpg"
+    kaputt.write_bytes(b"nix")
+    assert dateiinfo.datei_info(kaputt).text() == "JPG · 3 B"
+    assert dateiinfo.miniatur(kaputt) is None
+
+
+def test_miniatur_dreht_nach_exif(tmp_path: Path):
+    from miksan_converter.gui import dateiinfo
+
+    bild = Image.new("RGB", (400, 200), (10, 20, 30))
+    exif = Image.Exif()
+    exif[0x0112] = 6  # 90° gedreht
+    bild.save(tmp_path / "hoch.jpg", exif=exif)
+    klein = dateiinfo.miniatur(tmp_path / "hoch.jpg", 96)
+    assert klein.size == (48, 96)
+    assert dateiinfo.datei_info(tmp_path / "hoch.jpg").text().startswith("JPEG · 200 × 400")
+
+
+def test_status_pro_eintrag(ordner: Path):
+    from miksan_converter.gui import dateiinfo
+    from miksan_converter.stapel import Auftrag, StapelErgebnis
+
+    ergebnis = StapelErgebnis(
+        ok=[Auftrag(ordner / "a.png", ordner / "a.jpg")],
+        fehler=[(ordner / "b.jpg", f"'{ordner / 'b.jpg'}' ist beschädigt.")],
+        hinweise=[(ordner / "a.png", "Transparenz auf Weiss gelegt")],
+    )
+    assert dateiinfo.status_fuer(ordner / "a.png", ergebnis) == (
+        dateiinfo.HINWEIS,
+        "Transparenz auf Weiss gelegt",
+    )
+    assert dateiinfo.status_fuer(ordner / "b.jpg", ergebnis) == (
+        dateiinfo.FEHLER,
+        "ist beschädigt.",
+    )
+    assert dateiinfo.status_fuer(ordner, ergebnis) == (dateiinfo.FEHLER, "1 ok, 1 Fehler")
+    assert dateiinfo.status_fuer(ordner / "unter" / "c.png", ergebnis) == ("", "")

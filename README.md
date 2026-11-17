@@ -18,7 +18,8 @@ Aktuelle Version: **0.2.0** (siehe [CHANGELOG.md](CHANGELOG.md)). Enthalten:
   Fortschrittsanzeige und Zusammenfassung, siehe [docs/ordner.md](docs/ordner.md)
 - Hintergrund entfernen mit lokalem KI-Modell (`miksan hintergrund`, kurz `miksan bg`; optional),
   siehe [docs/hintergrund.md](docs/hintergrund.md)
-- Grafische Oberfläche (`miksan-gui`; optional): Bilder und Ordner per Drag & Drop umwandeln,
+- Grafische Oberfläche (`miksan-gui`; optional) im Blau-Weiss-Design mit Startseite,
+  Seitenleiste und einer Seite pro Werkzeug: Bilder und Ordner per Drag & Drop umwandeln,
   bearbeiten und freistellen, mit Fortschritt, Abbrechen und Zusammenfassung, siehe
   [docs/oberflaeche.md](docs/oberflaeche.md)
 - Windows-Installer (`MiksanConverter-Setup-X.Y.Z.exe`) ohne Python, siehe
