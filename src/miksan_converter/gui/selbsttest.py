@@ -14,7 +14,16 @@ import time
 import traceback
 from pathlib import Path
 
-MODULE = ("PIL", "pillow_heif", "resvg_py", "rawpy", "onnxruntime", "rembg", "PySide6.QtWidgets")
+MODULE = (
+    "PIL",
+    "pillow_heif",
+    "resvg_py",
+    "rawpy",
+    "onnxruntime",
+    "rembg",
+    "PySide6.QtWidgets",
+    "PySide6.QtSvg",
+)
 
 
 def _module_pruefen(zeilen: list[str]) -> bool:
@@ -28,6 +37,25 @@ def _module_pruefen(zeilen: list[str]) -> bool:
         else:
             zeilen.append(f"ok      {modul}")
     return alles_ok
+
+
+def _design_pruefen(zeilen: list[str]) -> bool:
+    """Stylesheet und alle Icons müssen im (eingepackten) Programm vorhanden sein."""
+    from PySide6.QtWidgets import QApplication
+
+    from . import design
+
+    app = QApplication.instance() or QApplication(sys.argv[:1])
+    design.anwenden(app)
+    namen = design.icon_namen()
+    fehlend = [name for name in namen if design.icon(name).pixmap(24, 24).isNull()]
+    ok = bool(app.styleSheet()) and len(namen) >= 20 and not fehlend
+    ok = ok and design.programm_icon_pfad().is_file()
+    text = f"Design: Stylesheet, {len(namen)} Icons"
+    if fehlend:
+        text += f", fehlerhaft: {', '.join(fehlend)}"
+    zeilen.append(f"{'ok' if ok else 'FEHLER':<8}{text}")
+    return ok
 
 
 def _fenster_pruefen(zeilen: list[str]) -> bool:
@@ -67,6 +95,11 @@ def selbsttest(bericht: Path | None = None) -> int:
 
     zeilen = [f"Miksan-Converter {__version__} – Selbsttest", f"Python {sys.version.split()[0]}"]
     ok = _module_pruefen(zeilen)
+    try:
+        ok = _design_pruefen(zeilen) and ok
+    except Exception:
+        ok = False
+        zeilen.append("FEHLER  Design:\n" + traceback.format_exc())
     try:
         ok = _fenster_pruefen(zeilen) and ok
     except Exception:

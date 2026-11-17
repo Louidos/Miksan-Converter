@@ -7,6 +7,10 @@ die Versionen folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Geändert
+
+- Die Oberfläche hat ein neues, helles Design in Blau und Weiss mit eigenen Icons (#19)
+
 ## 0.2.0 – 2026-10-20
 
 ### Hinzugefügt

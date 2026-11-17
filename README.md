@@ -110,6 +110,9 @@ Genutzte Bibliotheken und ihre Lizenzen:
 | [ONNX Runtime](https://onnxruntime.ai/) (Extra `[ki]`) | KI-Modell auf der CPU ausführen | MIT |
 | [PySide6](https://doc.qt.io/qtforpython-6/) (Extra `[gui]`) | grafische Oberfläche (Qt) | LGPL-3.0 ⁴ |
 
+Die Icons der Oberfläche (`src/miksan_converter/gui/icons/`) und das Programm-Icon sind für
+dieses Projekt selbst gezeichnet und stehen wie der übrige Code unter MIT.
+
 ¹ Die Binärpakete von pillow-heif enthalten libheif und libde265 (LGPL-3.0) sowie x265
 (GPL-2.0-or-later). Miksan-Converter selbst verteilt diese Bibliotheken nicht, sie werden bei der
 Installation von PyPI geladen; der Code dieses Projekts bleibt MIT. Wer ein Paket mit allen

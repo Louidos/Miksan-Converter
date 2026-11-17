@@ -30,7 +30,6 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSpinBox,
     QSplitter,
-    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -40,12 +39,10 @@ from ..fehler import MiksanFehler
 from ..formats import bekannte_bild_endungen
 from ..hintergrund import modell_ordner
 from ..stapel import StapelErgebnis
-from . import logik
+from . import design, logik
 from .arbeiter import Arbeiter
 
 TITEL = "Miksan-Converter"
-_ORDNER_SYMBOL = QStyle.StandardPixmap.SP_DirIcon
-_DATEI_SYMBOL = QStyle.StandardPixmap.SP_FileIcon
 
 _MODELL_TEXTE = {
     "klein": "schnell, gut für einfache Motive",
@@ -55,10 +52,7 @@ _MODELL_TEXTE = {
 }
 
 
-def programm_icon() -> QIcon:
-    """Programm-Icon aus dem Paket (falls vorhanden), sonst das Standard-Icon von Qt."""
-    pfad = Path(__file__).with_name("miksan.png")
-    return QIcon(str(pfad)) if pfad.is_file() else QIcon()
+programm_icon = design.programm_icon
 
 
 class DateiListe(QListWidget):
@@ -141,9 +135,9 @@ class Hauptfenster(QMainWindow):
         layout.addWidget(self.liste, 1)
 
         knoepfe = QHBoxLayout()
-        self.knopf_dateien = QPushButton("Dateien hinzufügen …")
+        self.knopf_dateien = QPushButton(design.icon("hinzufuegen", design.AKZENT), "Dateien …")
         self.knopf_dateien.clicked.connect(self._dateien_waehlen)
-        self.knopf_ordner = QPushButton("Ordner hinzufügen …")
+        self.knopf_ordner = QPushButton(design.icon("ordner", design.AKZENT), "Ordner …")
         self.knopf_ordner.clicked.connect(self._ordner_waehlen)
         self.knopf_entfernen = QPushButton("Entfernen")
         self.knopf_entfernen.clicked.connect(self._auswahl_entfernen)
@@ -173,7 +167,7 @@ class Hauptfenster(QMainWindow):
         self.aktion_knoepfe: dict[str, QRadioButton] = {}
         self.aktion_hinweis = QLabel()
         self.aktion_hinweis.setWordWrap(True)
-        self.aktion_hinweis.setStyleSheet("color: gray")
+        design.eigenschaft(self.aktion_hinweis, "hinweis")
         hinweise = []
         for eintrag in logik.aktionen_fuer_auswahl():
             knopf = QRadioButton(eintrag.text)
@@ -200,7 +194,7 @@ class Hauptfenster(QMainWindow):
         ziel_layout.addRow("Zielformat:", self.format_auswahl)
         self.format_hinweis = QLabel()
         self.format_hinweis.setWordWrap(True)
-        self.format_hinweis.setStyleSheet("color: gray")
+        design.eigenschaft(self.format_hinweis, "hinweis")
         ziel_layout.addRow("", self.format_hinweis)
 
         ordner_zeile = QHBoxLayout()
@@ -278,7 +272,8 @@ class Hauptfenster(QMainWindow):
         self.fortschritt = QProgressBar()
         self.fortschritt.setValue(0)
         zeile.addWidget(self.fortschritt, 1)
-        self.knopf_start = QPushButton("Start")
+        self.knopf_start = QPushButton(design.icon("abspielen", design.AUF_AKZENT), "Start")
+        design.eigenschaft(self.knopf_start, "primaer")
         self.knopf_start.setDefault(True)
         self.knopf_start.clicked.connect(self.starten)
         zeile.addWidget(self.knopf_start)
@@ -290,8 +285,11 @@ class Hauptfenster(QMainWindow):
 
         status_zeile = QHBoxLayout()
         self.status = QLabel("Bereit.")
+        self.status.setWordWrap(True)
         status_zeile.addWidget(self.status, 1)
-        self.knopf_oeffnen = QPushButton("Ausgabeordner öffnen")
+        self.knopf_oeffnen = QPushButton(
+            design.icon("ordner_oeffnen", design.AKZENT), "Ausgabeordner öffnen"
+        )
         self.knopf_oeffnen.setEnabled(False)
         self.knopf_oeffnen.clicked.connect(self._ausgabe_oeffnen)
         status_zeile.addWidget(self.knopf_oeffnen)
@@ -312,14 +310,13 @@ class Hauptfenster(QMainWindow):
 
     def pfade_hinzufuegen(self, pfade: list[str | Path]) -> None:
         vorhanden = set(self.pfade())
-        stil = self.style()
         for pfad in pfade:
             text = str(Path(pfad))
             if text in vorhanden:
                 continue
             vorhanden.add(text)
-            symbol = _ORDNER_SYMBOL if Path(text).is_dir() else _DATEI_SYMBOL
-            eintrag = QListWidgetItem(stil.standardIcon(symbol), text)
+            symbol = "ordner" if Path(text).is_dir() else "bild"
+            eintrag = QListWidgetItem(design.icon(symbol, design.NEBENTEXT), text)
             eintrag.setData(Qt.ItemDataRole.UserRole, text)
             self.liste.addItem(eintrag)
         self._knoepfe_aktualisieren()
@@ -634,7 +631,9 @@ class Hauptfenster(QMainWindow):
 
 
 def starten(argv: list[str]) -> int:
+    design.hohe_aufloesung_einrichten()
     app = QApplication.instance() or QApplication(sys.argv[:1])
+    design.anwenden(app)
     app.setApplicationName(TITEL)
     app.setOrganizationName("Miksan")
     app.setWindowIcon(programm_icon())

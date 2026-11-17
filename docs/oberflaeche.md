@@ -24,6 +24,19 @@ miksan gui                 # dasselbe über die Kommandozeile (Alias: miksan obe
 
 Fehlt das Extra, meldet `miksan gui` das mit dem Installationsbefehl und Rückgabecode 3.
 
+## Design
+
+Die Oberfläche hat ein eigenes, helles Design in Blau und Weiss, das auf Windows, macOS und
+Linux gleich aussieht (Qt-Stil „Fusion“ mit einem zentralen Stylesheet). Der Hauptknopf jeder
+Seite ist blau gefüllt, alle anderen Knöpfe sind weiss mit blauem Rahmen; der Tastaturfokus ist
+mit einem dunkleren blauen Rahmen sichtbar. Die Icons sind eigene, schlichte Linien-Icons (SVG),
+die auch bei 125 %, 150 % oder 200 % Bildschirmskalierung scharf bleiben.
+
+Für Entwickler: Farben, Abstände (8-px-Raster), Eckenradius und Schriftgrösse stehen nur in
+`src/miksan_converter/gui/design.py`. Andere Dateien setzen keine Farben, sondern nur eine Rolle
+(`design.eigenschaft(widget, "primaer")`, `"hinweis"`, `"fehler"` …). Die Icons liegen in
+`src/miksan_converter/gui/icons/` und werden mit `design.icon("name", farbe)` geladen.
+
 ## Bedienung
 
 1. **Bilder und Ordner hinzufügen** – per Drag & Drop in die Liste (oder irgendwo ins Fenster)
