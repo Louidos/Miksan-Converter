@@ -7,6 +7,8 @@ die Versionen folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 0.3.0 – 2026-11-17
+
 ### Hinzugefügt
 
 - Vorschau mit Vorher/Nachher-Schieber und geschätzter Dateigrösse vor dem Umwandeln (#21)
